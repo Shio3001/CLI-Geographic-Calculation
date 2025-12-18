@@ -11,8 +11,8 @@ import (
 )
 
 // RailroadSection
-func readGiotypeRailroadSection(filePath string) (*giocaltype.GiotypeRailroadSectionFeatureCollection, error) {
-	data, err := readGeoJSONFile(filePath)
+func ReadGiotypeRailroadSection(filePath string) (*giocaltype.GiotypeRailroadSectionFeatureCollection, error) {
+	data, err := ReadGeoJSONFile(filePath)
 	if err != nil {
 		return nil, err
 	}
@@ -27,8 +27,8 @@ func readGiotypeRailroadSection(filePath string) (*giocaltype.GiotypeRailroadSec
 }
 
 // Station
-func readGiotypeStation(filePath string) (*giocaltype.GiotypeStationFeatureCollection, error) {
-	data, err := readGeoJSONFile(filePath)
+func ReadGiotypeStation(filePath string) (*giocaltype.GiotypeStationFeatureCollection, error) {
+	data, err := ReadGeoJSONFile(filePath)
 	if err != nil {
 		return nil, err
 	}
@@ -43,8 +43,8 @@ func readGiotypeStation(filePath string) (*giocaltype.GiotypeStationFeatureColle
 }
 
 // Passengers
-func readGiotypePassengers(filePath string) (*giocaltype.GiotypePassengers, error) {
-	data, err := readGeoJSONFile(filePath)
+func ReadGiotypePassengers(filePath string) (*giocaltype.GiotypePassengers, error) {
+	data, err := ReadGeoJSONFile(filePath)
 	if err != nil {
 		return nil, err
 	}
@@ -60,10 +60,53 @@ func readGiotypePassengers(filePath string) (*giocaltype.GiotypePassengers, erro
 
 
 //readGeoJSONFile は指定されたファイルパスからGeoJSONデータを読み込むヘルパー関数
-func readGeoJSONFile(filePath string) ([]byte, error) {
+func ReadGeoJSONFile(filePath string) ([]byte, error) {
 	data, err := os.ReadFile(filePath)
 	if err != nil {
 		return nil, err
 	}
 	return data, nil
 }
+
+// それぞれ、対象路線を複数指定して読み込む関数
+func ReadGiotypeRailroadSectionForLines(filePath string, targetLines []string) (*giocaltype.GiotypeRailroadSectionFeatureCollection, error) {
+	fc, err := ReadGiotypeRailroadSection(filePath)
+	if err != nil {
+		return nil, err
+	}
+
+	// 対象路線でフィルタリング
+	var filteredFeatures []giocaltype.GiotypeRailroadSection
+	for _, feature := range fc.Features {
+		for _, line := range targetLines {
+			if feature.Properties.N02003 == line {
+				filteredFeatures = append(filteredFeatures, feature)
+				break
+			}
+		}
+	}
+	fc.Features = filteredFeatures
+
+	return fc, nil
+}
+
+func ReadGiotypeStationForLines(filePath string, targetLines []string) (*giocaltype.GiotypeStationFeatureCollection, error) {
+	fc, err := ReadGiotypeStation(filePath)
+	if err != nil {
+		return nil, err
+	}
+
+	// 対象路線でフィルタリング
+	var filteredFeatures []giocaltype.GiotypeStation
+	for _, feature := range fc.Features {
+		for _, line := range targetLines {
+			if feature.Properties.N02003 == line {
+				filteredFeatures = append(filteredFeatures, feature)
+				break
+			}
+		}
+	}
+	fc.Features = filteredFeatures
+
+	return fc, nil
+}	
