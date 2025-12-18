@@ -1,17 +1,23 @@
 // giodata内の geojson を読みこみ、変換し、型情報を付与して返すプログラム
 //型情報はinternal/giocal/giocaltype/.goパッケージに定義する
 
-package giocaltype
+package giocal
 
+import (
+	"encoding/json"
+	"os"
+
+	"github.com/Shio3001/CLI-Geographic-Calculation/internal/giocal/giocaltype"
+)
 
 // RailroadSection
-func readGiotypeRailroadSection(filePath string) (*GiotypeRailroadSectionFeatureCollection, error) {
+func readGiotypeRailroadSection(filePath string) (*giocaltype.GiotypeRailroadSectionFeatureCollection, error) {
 	data, err := readGeoJSONFile(filePath)
 	if err != nil {
 		return nil, err
 	}
 
-	var fc GiotypeRailroadSectionFeatureCollection
+	var fc giocaltype.GiotypeRailroadSectionFeatureCollection
 	err = json.Unmarshal(data, &fc)
 	if err != nil {
 		return nil, err
@@ -21,13 +27,13 @@ func readGiotypeRailroadSection(filePath string) (*GiotypeRailroadSectionFeature
 }
 
 // Station
-func readGiotypeStation(filePath string) (*GiotypeStationFeatureCollection, error) {
+func readGiotypeStation(filePath string) (*giocaltype.GiotypeStationFeatureCollection, error) {
 	data, err := readGeoJSONFile(filePath)
 	if err != nil {
 		return nil, err
 	}
 
-	var fc GiotypeStationFeatureCollection
+	var fc giocaltype.GiotypeStationFeatureCollection
 	err = json.Unmarshal(data, &fc)
 	if err != nil {
 		return nil, err
@@ -37,13 +43,13 @@ func readGiotypeStation(filePath string) (*GiotypeStationFeatureCollection, erro
 }
 
 // Passengers
-func readGiotypePassengers(filePath string) (*GiotypePassengersFeatureCollection, error) {
+func readGiotypePassengers(filePath string) (*giocaltype.GiotypePassengers, error) {
 	data, err := readGeoJSONFile(filePath)
 	if err != nil {
 		return nil, err
 	}
 
-	var fc GiotypePassengersFeatureCollection
+	var fc giocaltype.GiotypePassengers
 	err = json.Unmarshal(data, &fc)
 	if err != nil {
 		return nil, err
@@ -52,3 +58,12 @@ func readGiotypePassengers(filePath string) (*GiotypePassengersFeatureCollection
 	return &fc, nil
 }	
 
+
+//readGeoJSONFile は指定されたファイルパスからGeoJSONデータを読み込むヘルパー関数
+func readGeoJSONFile(filePath string) ([]byte, error) {
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		return nil, err
+	}
+	return data, nil
+}

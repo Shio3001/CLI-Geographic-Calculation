@@ -44,8 +44,10 @@ package giocaltype
 //         ]
 //       }
 //     },
+//	]
+//}
 
-func GiotypeStation struct {
+type GiotypeStation struct {
 	Type       string `json:"type"`
 	Properties struct {
 		N02001 string `json:"N02_001"` // 鉄道区分
