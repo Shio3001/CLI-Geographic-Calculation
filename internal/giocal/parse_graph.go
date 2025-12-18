@@ -417,6 +417,36 @@ func getPassengersData(
 		}
 		true_flag := 1
 		//フラグを確認し、データ有無コードがtrue_flagの場合のみ乗降客数を取得
+
+		//すべてがint(feature.Properties.S12011) != true_flagで、なおかつ該当数値がすべて0の場合、continueでスキップする
+		all_zero := true
+		for _, value := range map[int]float64{
+			2011: feature.Properties.S12009,
+			2012: feature.Properties.S12013,
+			2013: feature.Properties.S12017,
+			2014: feature.Properties.S12021,
+			2015: feature.Properties.S12025,
+			2016: feature.Properties.S12029,
+			2017: feature.Properties.S12033,
+			2018: feature.Properties.S12037,
+			2019: feature.Properties.S12041,
+			2020: feature.Properties.S12045,
+			2021: feature.Properties.S12049,
+			2022: feature.Properties.S12053,
+			2023: feature.Properties.S12057,
+		} {
+			if value != 0 {
+				all_zero = false
+				break
+			}
+		}
+		if all_zero {
+			continue
+		}
+
+		if int(feature.Properties.S12007) == true_flag {
+			passengersData[2011] = feature.Properties.S12009
+		}
 		if int(feature.Properties.S12011) == true_flag {
 			passengersData[2012] = feature.Properties.S12013
 		}
