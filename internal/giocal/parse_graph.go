@@ -22,6 +22,7 @@ import (
 func ConvertGiotypeStationToGraph(
 	stationFC *giocaltype.GiotypeStationFeatureCollection,
 	railroadSectionFC *giocaltype.GiotypeRailroadSectionFeatureCollection,
+	passengersFC *giocaltype.GiotypePassengersFeatureCollection,
 ) *graphstructure.Graph {
 
 	// TODO: graphstructure に合わせて初期化を調整
@@ -110,6 +111,9 @@ func ConvertGiotypeStationToGraph(
 	// =========================
 	// 2) 駅ノードを作る（代表座標を選ぶ）
 	// =========================
+
+	//passengersData
+
 	for _, st := range stationFC.Features {
 		stationID := makeStationID(st.Properties.N02005c, st.Properties.N02005g, st.Properties.N02004, st.Properties.N02003, st.Properties.N02005)
 
@@ -130,6 +134,7 @@ func ConvertGiotypeStationToGraph(
 			Name: st.Properties.N02005,
 			Lon:  chosenLon,
 			Lat:  chosenLat,
+			Passengers: getPassengersData(passengersFC, st.Properties.N02005c),
 			Meta: map[string]string{
 				"station_code": st.Properties.N02005c,
 				"group_code":   st.Properties.N02005g,
@@ -320,3 +325,135 @@ func findClosestCoordNodeID(
 	}
 	return bestID
 }
+
+
+
+/**
+	S12001  string  `json:"S12_001"`  // 駅名
+	S12001c string  `json:"S12_001c"` // 駅コード
+	S12001g string  `json:"S12_001g"` // グループコード
+	S12002  string  `json:"S12_002"`  // 運営会社
+	S12003  string  `json:"S12_003"`  // 路線名
+	S12004  float64 `json:"S12_004"`  // 鉄道区分
+	S12005  float64 `json:"S12_005"`  // 事業者種別
+
+	S12006 float64 `json:"S12_006"` // 重複コード2011
+	S12007 float64 `json:"S12_007"` // データ有無コード2011
+	S12008 *string `json:"S12_008"` // 備考2011
+	S12009 float64 `json:"S12_009"` // 乗降客数2011（整数相当だがJSONがfloatなので float64）
+
+	S12010 float64 `json:"S12_010"` // 重複コード2012
+	S12011 float64 `json:"S12_011"` // データ有無コード2012
+	S12012 *string `json:"S12_012"` // 備考2012
+	S12013 float64 `json:"S12_013"` // 乗降客数2012
+
+	S12014 float64 `json:"S12_014"` // 重複コード2013
+	S12015 float64 `json:"S12_015"` // データ有無コード2013
+	S12016 *string `json:"S12_016"` // 備考2013
+	S12017 float64 `json:"S12_017"` // 乗降客数2013
+
+	S12018 float64 `json:"S12_018"` // 重複コード2014
+	S12019 float64 `json:"S12_019"` // データ有無コード2014
+	S12020 *string `json:"S12_020"` // 備考2014
+	S12021 float64 `json:"S12_021"` // 乗降客数2014
+
+	S12022 float64 `json:"S12_022"` // 重複コード2015
+	S12023 float64 `json:"S12_023"` // データ有無コード2015
+	S12024 *string `json:"S12_024"` // 備考2015
+	S12025 float64 `json:"S12_025"` // 乗降客数2015
+
+	S12026 float64 `json:"S12_026"` // 重複コード2016
+	S12027 float64 `json:"S12_027"` // データ有無コード2016
+	S12028 *string `json:"S12_028"` // 備考2016
+	S12029 float64 `json:"S12_029"` // 乗降客数2016
+
+	S12030 float64 `json:"S12_030"` // 重複コード2017
+	S12031 float64 `json:"S12_031"` // データ有無コード2017
+	S12032 *string `json:"S12_032"` // 備考2017
+	S12033 float64 `json:"S12_033"` // 乗降客数2017
+
+	S12034 float64 `json:"S12_034"` // 重複コード2018
+	S12035 float64 `json:"S12_035"` // データ有無コード2018
+	S12036 *string `json:"S12_036"` // 備考2018
+	S12037 float64 `json:"S12_037"` // 乗降客数2018
+
+	S12038 float64 `json:"S12_038"` // 重複コード2019
+	S12039 float64 `json:"S12_039"` // データ有無コード2019
+	S12040 *string `json:"S12_040"` // 備考2019
+	S12041 float64 `json:"S12_041"` // 乗降客数2019
+
+	S12042 float64 `json:"S12_042"` // 重複コード2020
+	S12043 float64 `json:"S12_043"` // データ有無コード2020
+	S12044 *string `json:"S12_044"` // 備考2020
+	S12045 float64 `json:"S12_045"` // 乗降客数2020
+
+	S12046 float64 `json:"S12_046"` // 重複コード2021
+	S12047 float64 `json:"S12_047"` // データ有無コード2021
+	S12048 *string `json:"S12_048"` // 備考2021
+	S12049 float64 `json:"S12_049"` // 乗降客数2021
+
+	S12050 float64 `json:"S12_050"` // 重複コード2022
+	S12051 float64 `json:"S12_051"` // データ有無コード2022
+	S12052 *string `json:"S12_052"` // 備考2022
+	S12053 float64 `json:"S12_053"` // 乗降客数2022
+
+	S12054 float64 `json:"S12_054"` // 重複コード2023
+	S12055 float64 `json:"S12_055"` // データ有無コード2023
+	S12056 *string `json:"S12_056"` // 備考2023
+	S12057 float64 `json:"S12_057"` // 乗降客数2023
+*/
+
+//	passengersFC *giocaltype.GiotypePassengersFeatureCollectionから連想配列で乗降客数データを取得
+//引数で渡す S12001cで駅コードを参照し、GiotypePassengersPropの年度ごとの乗降客数データを数値:数値の連想配列で返す
+//フラグも確認する。S12001cが一致する駅コードのデータのみを取得する
+func getPassengersData(
+	passengersFC *giocaltype.GiotypePassengersFeatureCollection, stationCode string,
+) map[int]float64 {
+	passengersData := make(map[int]float64)	
+	for _, feature := range passengersFC.Features {
+		//駅コードが一致しない場合はスキップ
+		if feature.Properties.S12001c != stationCode {
+			continue
+		}
+		true_flag := 1
+		//フラグを確認し、データ有無コードがtrue_flagの場合のみ乗降客数を取得
+		if int(feature.Properties.S12011) == true_flag {
+			passengersData[2012] = feature.Properties.S12013
+		}
+		if int(feature.Properties.S12015) == true_flag {
+			passengersData[2013] = feature.Properties.S12017
+		}
+		if int(feature.Properties.S12019) == true_flag {
+			passengersData[2014] = feature.Properties.S12021
+		}
+		if int(feature.Properties.S12023) == true_flag {
+			passengersData[2015] = feature.Properties.S12025
+		}
+		if int(feature.Properties.S12027) == true_flag {
+			passengersData[2016] = feature.Properties.S12029
+		}
+		if int(feature.Properties.S12031) == true_flag {
+			passengersData[2017] = feature.Properties.S12033
+		}
+		if int(feature.Properties.S12035) == true_flag {
+			passengersData[2018] = feature.Properties.S12037
+		}
+		if int(feature.Properties.S12039) == true_flag {
+			passengersData[2019] = feature.Properties.S12041
+		}
+		if int(feature.Properties.S12043) == true_flag {
+			passengersData[2020] = feature.Properties.S12045
+		}
+		if int(feature.Properties.S12047) == true_flag {
+			passengersData[2021] = feature.Properties.S12049
+		}
+		if int(feature.Properties.S12051) == true_flag {
+			passengersData[2022] = feature.Properties.S12053
+		}
+		if int(feature.Properties.S12055) == true_flag {
+			passengersData[2023] = feature.Properties.S12057
+		}
+	}
+	return passengersData
+}
+		

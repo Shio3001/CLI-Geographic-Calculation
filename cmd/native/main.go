@@ -14,34 +14,42 @@ import (
 
 func main() {
 	var (
-		stationPath = flag.String("station", "", "path to station GeoJSON (N02 station)")
-		sectionPath = flag.String("section", "", "path to railroad section GeoJSON (N02 railroad section)")
-		linesRaw    = flag.String("lines", "", "comma-separated target line names (e.g. \"山手線,中央線\")")
-		pretty      = flag.Bool("pretty", false, "pretty-print JSON output")
-		out         = flag.String("out", "", "output file path (optional). if empty, print to stdout")
+		stationPath    = flag.String("station", "", "path to station GeoJSON (N02 station)")
+		sectionPath    = flag.String("section", "", "path to railroad section GeoJSON (N02 railroad section)")
+		passengersPath = flag.String("passengers", "", "path to passengers GeoJSON (S12 passengers)")
+
+		company  = flag.String("company", "", "filter by company name (e.g. \"東日本旅客鉄道\")")
+		linesRaw = flag.String("lines", "", "comma-separated target line names (e.g. \"山手線,中央線\")")
+
+		pretty = flag.Bool("pretty", false, "pretty-print JSON output")
+		out    = flag.String("out", "", "output file path (optional). if empty, print to stdout")
 	)
 	flag.Parse()
 
-	if *stationPath == "" || *sectionPath == "" {
-		fmt.Fprintln(os.Stderr, "ERROR: -station and -section are required")
+	if *stationPath == "" || *sectionPath == "" || *passengersPath == "" {
+		fmt.Fprintln(os.Stderr, "ERROR: -station, -section and -passengers are required")
 		flag.Usage()
 		os.Exit(2)
 	}
 
 	targetLines := parseCSV(*linesRaw)
+	targetCompany := strings.TrimSpace(*company)
 
 	var (
-		stFC *giocaltype.GiotypeStationFeatureCollection
-		rrFC *giocaltype.GiotypeRailroadSectionFeatureCollection
-		err  error
+		stFC         *giocaltype.GiotypeStationFeatureCollection
+		rrFC         *giocaltype.GiotypeRailroadSectionFeatureCollection
+		passengersFC *giocaltype.GiotypePassengersFeatureCollection
+		err          error
 	)
 
-	if len(targetLines) > 0 {
-		stFC, err = giocal.ReadGiotypeStationForLines(*stationPath, targetLines)
+	// ---- Read stations / sections with optional filters ----
+	if len(targetLines) > 0 || targetCompany != "" {
+		stFC, err = giocal.ReadGiotypeStationForCompanyAndLines(*stationPath, targetCompany, targetLines)
 		if err != nil {
 			die(err)
 		}
-		rrFC, err = giocal.ReadGiotypeRailroadSectionForLines(*sectionPath, targetLines)
+
+		rrFC, err = giocal.ReadGiotypeRailroadSectionForCompanyAndLines(*sectionPath, targetCompany, targetLines)
 		if err != nil {
 			die(err)
 		}
@@ -50,13 +58,21 @@ func main() {
 		if err != nil {
 			die(err)
 		}
+
 		rrFC, err = giocal.ReadGiotypeRailroadSection(*sectionPath)
 		if err != nil {
 			die(err)
 		}
 	}
 
-	g := giocal.ConvertGiotypeStationToGraph(stFC, rrFC)
+	// ---- Read passengers (ここは lines/company で絞るかは要件次第) ----
+	// いったん「全部読む」だけにしておく（Graph変換側で駅コード等で結合する想定）
+	passengersFC, err = giocal.ReadGiotypePassengersForCompanyAndLines(*passengersPath , targetCompany, targetLines)
+	if err != nil {
+		die(err)
+	}
+
+	g := giocal.ConvertGiotypeStationToGraph(stFC, rrFC, passengersFC)
 
 	var b []byte
 	if *pretty {
@@ -102,5 +118,3 @@ func die(err error) {
 	fmt.Fprintln(os.Stderr, "ERROR:", err)
 	os.Exit(1)
 }
-
-

@@ -18,7 +18,11 @@ type Node struct {
 
 	// 任意のメタデータ（駅コード/会社/路線など）
 	Meta map[string]string
+
+	//乗降客数(keyを年度の数値 , valueを人数の文字列とする)
+	Passengers map[int]float64
 }
+
 
 type Edge struct {
 	From string
