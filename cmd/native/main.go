@@ -7,10 +7,16 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/Shio3001/CLI-Geographic-Calculation/internal/giocal"
 	"github.com/Shio3001/CLI-Geographic-Calculation/internal/giocal/giocaltype"
 )
+
+//現在のミリ秒取得
+func currentMillis() int64 {
+	return int64(float64(time.Now().UnixNano()) / 1e6)
+}
 
 func main() {
 	var (
@@ -31,6 +37,12 @@ func main() {
 		flag.Usage()
 		os.Exit(2)
 	}
+
+	
+
+	//実行開始時間出力(ミリ秒単位)
+	startTime := currentMillis()
+	fmt.Fprintf(os.Stderr, "Start time: %d ms\n",startTime)
 
 	targetLines := parseCSV(*linesRaw)
 	targetCompany := strings.TrimSpace(*company)
@@ -65,14 +77,17 @@ func main() {
 		}
 	}
 
-	// ---- Read passengers (ここは lines/company で絞るかは要件次第) ----
-	// いったん「全部読む」だけにしておく（Graph変換側で駅コード等で結合する想定）
 	passengersFC, err = giocal.ReadGiotypePassengersForCompanyAndLines(*passengersPath , targetCompany, targetLines)
 	if err != nil {
 		die(err)
 	}
 
 	g := giocal.ConvertGiotypeStationToGraph(stFC, rrFC, passengersFC)
+
+	convertTime := currentMillis()
+	fmt.Fprintf(os.Stderr, "Conversion time: %d ms\n", convertTime - startTime)
+
+
 
 	var b []byte
 	if *pretty {
@@ -83,6 +98,8 @@ func main() {
 	if err != nil {
 		die(err)
 	}
+
+	
 
 	if *out == "" {
 		fmt.Println(string(b))
@@ -96,6 +113,15 @@ func main() {
 		die(err)
 	}
 	fmt.Fprintf(os.Stderr, "Wrote: %s\n", *out)
+
+	//実行終了時間出力(ミリ秒単位)
+	endTime := currentMillis()
+	
+	fmt.Fprintf(os.Stderr, "End time: %d ms\n",endTime)
+
+	//計測時刻出力
+	fmt.Fprintf(os.Stderr, "Total execution time: %d ms\n", endTime - startTime)
+	fmt.Fprintf(os.Stderr, "Graph conversion time: %d ms\n", convertTime - startTime)
 }
 
 func parseCSV(s string) []string {
