@@ -23,6 +23,7 @@ func main() {
 		stationPath    = flag.String("station", "", "path to station GeoJSON (N02 station)")
 		sectionPath    = flag.String("section", "", "path to railroad section GeoJSON (N02 railroad section)")
 		passengersPath = flag.String("passengers", "", "path to passengers GeoJSON (S12 passengers)")
+		history = flag.String("history", "", "path to railroad history GeoJSON (N05 railroad history)")
 
 		company  = flag.String("company", "", "filter by company name (e.g. \"東日本旅客鉄道\")")
 		linesRaw = flag.String("lines", "", "comma-separated target line names (e.g. \"山手線,中央線\")")
@@ -32,8 +33,8 @@ func main() {
 	)
 	flag.Parse()
 
-	if *stationPath == "" || *sectionPath == "" || *passengersPath == "" {
-		fmt.Fprintln(os.Stderr, "ERROR: -station, -section and -passengers are required")
+	if *stationPath == "" || *sectionPath == "" || *passengersPath == "" || *history == "" {
+		fmt.Fprintln(os.Stderr, "ERROR: -station, -section, -passengers and -history are required")
 		flag.Usage()
 		os.Exit(2)
 	}
@@ -51,6 +52,7 @@ func main() {
 		stFC         *giocaltype.GiotypeStationFeatureCollection
 		rrFC         *giocaltype.GiotypeRailroadSectionFeatureCollection
 		passengersFC *giocaltype.GiotypePassengersFeatureCollection
+		historyFC    *giocaltype.GiotypeN05RailroadSectionFeatureCollection
 		err          error
 	)
 
@@ -81,8 +83,12 @@ func main() {
 	if err != nil {
 		die(err)
 	}
+	historyFC, err = giocal.ReadGiotypeRailHistoryForCompanyAndLines(*history, targetCompany, targetLines)
+	if err != nil {
+		die(err)
+	}
 
-	g := giocal.ConvertGiotypeStationToGraph(stFC, rrFC, passengersFC)
+	g := giocal.ConvertGiotypeStationToGraph(stFC, rrFC, passengersFC, historyFC)
 
 	convertTime := currentMillis()
 	fmt.Fprintf(os.Stderr, "Conversion time: %d ms\n", convertTime - startTime)

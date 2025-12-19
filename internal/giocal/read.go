@@ -200,3 +200,51 @@ func ReadGiotypePassengersForCompanyAndLines(filePath string, company string, ta
 
 	return fc, nil
 }
+
+// 開業年度
+
+func ReadGiotypeRailHistory(filePath string) (*giocaltype.GiotypeN05RailroadSectionFeatureCollection, error) {
+	data, err := ReadGeoJSONFile(filePath)
+	if err != nil {
+		return nil, err
+	}
+
+	var fc giocaltype.GiotypeN05RailroadSectionFeatureCollection
+	err = json.Unmarshal(data, &fc)
+	if err != nil {
+		return nil, err
+	}
+
+	return &fc, nil
+}
+
+func ReadGiotypeRailHistoryForCompanyAndLines(filePath string, company string, targetLines []string) (*giocaltype.GiotypeN05RailroadSectionFeatureCollection, error) {
+	fc, err := ReadGiotypeRailHistory(filePath)
+	if err != nil {
+		return nil, err
+	}
+
+	// 鉄道会社と対象路線でフィルタリング
+	var filteredFeatures []giocaltype.GiotypeN05RailroadSectionFeature
+	for _, feature := range fc.Features {
+		if feature.Properties.N05003 != company {
+			continue
+		}
+		if len(targetLines) == 0 {
+			filteredFeatures = append(filteredFeatures, feature)
+			continue
+		}
+		for _, line := range targetLines {
+			if feature.Properties.N05002 == line {
+				filteredFeatures = append(filteredFeatures, feature)
+				break
+			}
+		}
+	}
+	fc.Features = filteredFeatures
+
+	return fc, nil
+}
+
+// 
+

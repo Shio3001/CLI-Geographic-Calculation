@@ -23,6 +23,7 @@ func ConvertGiotypeStationToGraph(
 	stationFC *giocaltype.GiotypeStationFeatureCollection,
 	railroadSectionFC *giocaltype.GiotypeRailroadSectionFeatureCollection,
 	passengersFC *giocaltype.GiotypePassengersFeatureCollection,
+	historyFC *giocaltype.GiotypeN05RailroadSectionFeatureCollection,
 ) *graphstructure.Graph {
 
 	// TODO: graphstructure に合わせて初期化を調整
@@ -31,10 +32,6 @@ func ConvertGiotypeStationToGraph(
 		Edges: []*graphstructure.Edge{},
 	}
 
-	// =========================
-	// 1) 路線区間の座標を「座標ノード」として作る
-	//    同一座標は統合（キーは丸め）
-	// =========================
 	coordNodeIDByKey := map[string]string{} // "lon,lat" -> nodeID
 	allCoordNodes := make([]coordNodeRef, 0, 4096)
 
@@ -57,7 +54,6 @@ func ConvertGiotypeStationToGraph(
 				nodeID = fmt.Sprintf("coord:%s", key)
 				coordNodeIDByKey[key] = nodeID
 
-				// TODO: graphstructure.Node のフィールド名に合わせて修正
 				g.Nodes[nodeID] = &graphstructure.Node{
 					ID:   nodeID,
 					Kind: "coord",
@@ -84,6 +80,9 @@ func ConvertGiotypeStationToGraph(
 					toID := coordNodeIDByKey[key]
 					if fromID != "" && toID != "" && fromID != toID {
 						// TODO: graphstructure.Edge のフィールド名に合わせて修正
+
+						
+
 						g.Edges = append(g.Edges, &graphstructure.Edge{
 							From:     fromID,
 							To:       toID,
@@ -95,6 +94,7 @@ func ConvertGiotypeStationToGraph(
 								"company": sec.Properties.N02004,
 								"line":    sec.Properties.N02003,
 								"sec_i":   fmt.Sprintf("%d", i),
+								"open_year": fmt.Sprintf("%d",getOpeningYear(historyFC,sec.Properties.N02004 ,sec.Properties.N02003)),
 							},
 						})
 					}
@@ -107,12 +107,6 @@ func ConvertGiotypeStationToGraph(
 	for k, refs := range coordNodesByLineKey {
 		coordNodesByLineKey[k] = uniqCoordRefs(refs)
 	}
-
-	// =========================
-	// 2) 駅ノードを作る（代表座標を選ぶ）
-	// =========================
-
-	//passengersData
 
 	for _, st := range stationFC.Features {
 		stationID := makeStationID(st.Properties.N02005c, st.Properties.N02005g, st.Properties.N02004, st.Properties.N02003, st.Properties.N02005)
@@ -127,6 +121,13 @@ func ConvertGiotypeStationToGraph(
 			continue
 		}
 
+
+		Passengers := getPassengersDataByCode(passengersFC, st.Properties.N02005c)
+		if len(Passengers) == 0 {
+			Passengers = getPassengersDataByName(passengersFC, st.Properties.N02005)
+		}
+
+
 		// TODO: graphstructure.Node のフィールド名に合わせて修正
 		g.Nodes[stationID] = &graphstructure.Node{
 			ID:   stationID,
@@ -134,7 +135,7 @@ func ConvertGiotypeStationToGraph(
 			Name: st.Properties.N02005,
 			Lon:  chosenLon,
 			Lat:  chosenLat,
-			Passengers: getPassengersData(passengersFC, st.Properties.N02005c),
+			Passengers: Passengers,
 			Meta: map[string]string{
 				"station_code": st.Properties.N02005c,
 				"group_code":   st.Properties.N02005g,
@@ -166,10 +167,6 @@ func ConvertGiotypeStationToGraph(
 
 	return g
 }
-
-// =========================
-// helper
-// =========================
 
 type coordNodeRef struct {
 	ID  string
@@ -406,7 +403,7 @@ func findClosestCoordNodeID(
 //	passengersFC *giocaltype.GiotypePassengersFeatureCollectionから連想配列で乗降客数データを取得
 //引数で渡す S12001cで駅コードを参照し、GiotypePassengersPropの年度ごとの乗降客数データを数値:数値の連想配列で返す
 //フラグも確認する。S12001cが一致する駅コードのデータのみを取得する
-func getPassengersData(
+func getPassengersDataByCode(
 	passengersFC *giocaltype.GiotypePassengersFeatureCollection, stationCode string,
 ) map[int]float64 {
 	passengersData := make(map[int]float64)	
@@ -487,3 +484,73 @@ func getPassengersData(
 	return passengersData
 }
 		
+
+func getPassengersDataByName(
+	passengersFC *giocaltype.GiotypePassengersFeatureCollection, stationName string,
+) map[int]float64 {
+	passengersData := make(map[int]float64)
+	for _, feature := range passengersFC.Features {
+		//駅名が一致しない場合はスキップ
+		if feature.Properties.S12001 != stationName {
+			continue
+		}
+		true_flag := 1
+		//フラグを確認し、データ有無コードがtrue_flagの場合のみ乗降客数を取得
+		if int(feature.Properties.S12007) == true_flag {
+			passengersData[2011] = feature.Properties.S12009
+		}
+		if int(feature.Properties.S12011) == true_flag {
+			passengersData[2012] = feature.Properties.S12013
+		}
+		if int(feature.Properties.S12015) == true_flag {
+			passengersData[2013] = feature.Properties.S12017
+		}
+		if int(feature.Properties.S12019) == true_flag {
+			passengersData[2014] = feature.Properties.S12021
+		}
+		if int(feature.Properties.S12023) == true_flag {
+			passengersData[2015] = feature.Properties.S12025
+		}		
+		if int(feature.Properties.S12027) == true_flag {
+			passengersData[2016] = feature.Properties.S12029
+		}
+		if int(feature.Properties.S12031) == true_flag {
+			passengersData[2017] = feature.Properties.S12033
+		}
+		if int(feature.Properties.S12035) == true_flag {
+			passengersData[2018] = feature.Properties.S12037
+		}
+		if int(feature.Properties.S12039) == true_flag {
+			passengersData[2019] = feature.Properties.S12041
+		}
+		if int(feature.Properties.S12043) == true_flag {
+			passengersData[2020] = feature.Properties.S12045
+		}
+		if int(feature.Properties.S12047) == true_flag {
+			passengersData[2021] = feature.Properties.S12049
+		}
+		if int(feature.Properties.S12051) == true_flag {
+			passengersData[2022] = feature.Properties.S12053
+		}
+		if int(feature.Properties.S12055) == true_flag {
+			passengersData[2023] = feature.Properties.S12057
+		}
+	}
+	return passengersData
+}
+
+//そのエッジの開業年度を取得する関数
+func getOpeningYear(
+	historyFC *giocaltype.GiotypeN05RailroadSectionFeatureCollection, company string, line string,
+) int {
+	for _, feature := range historyFC.Features {
+		if feature.Properties.N05003 != company {
+			continue
+		}
+		if feature.Properties.N05002 != line {
+			continue
+		}
+		return int(feature.Properties.N05004)	
+	}
+	return 0 //見つからなかった場合は0を返す
+}
