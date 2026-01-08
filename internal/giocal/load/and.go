@@ -1,4 +1,4 @@
-package giocal_read
+package giocal_load
 
 import (
 	"github.com/Shio3001/CLI-Geographic-Calculation/internal/giocal"
@@ -7,8 +7,8 @@ import (
 
 // それぞれ、鉄道会社と、対象路線を複数指定して読み込む関数(AND条件)
 // 対象路線が空の場合は全路線を読み込む
-func ReadGiotypeRailroadSectionForCompanyAndLines(filePath string, company string, targetLines []string) (*giocaltype.GiotypeRailroadSectionFeatureCollection, error) {
-	fc, err := giocal.ReadGiotypeRailroadSection(filePath)
+func LoadGiotypeRailroadSectionForCompanyAndLines(filePath string, company string, targetLines []string) (*giocaltype.GiotypeRailroadSectionFeatureCollection, error) {
+	fc, err := giocal.LoadGiotypeRailroadSection(filePath)
 	if err != nil {
 		return nil, err
 	}
@@ -35,8 +35,8 @@ func ReadGiotypeRailroadSectionForCompanyAndLines(filePath string, company strin
 	return fc, nil
 }
 
-func ReadGiotypeStationForCompanyAndLines(filePath string, company string, targetLines []string) (*giocaltype.GiotypeStationFeatureCollection, error)	 {
-	fc, err := giocal.ReadGiotypeStation(filePath)
+func LoadGiotypeStationForCompanyAndLines(filePath string, company string, targetLines []string) (*giocaltype.GiotypeStationFeatureCollection, error)	 {
+	fc, err := giocal.LoadGiotypeStation(filePath)
 	if err != nil {
 		return nil, err
 	}
@@ -64,8 +64,8 @@ func ReadGiotypeStationForCompanyAndLines(filePath string, company string, targe
 }	
 
 //乗降客数データの読み込み関数
-func ReadGiotypePassengersForCompanyAndLines(filePath string, company string, targetLines []string) (*giocaltype.GiotypePassengersFeatureCollection, error) {
-	fc, err := giocal.ReadGiotypePassengers(filePath)
+func LoadGiotypePassengersForCompanyAndLines(filePath string, company string, targetLines []string) (*giocaltype.GiotypePassengersFeatureCollection, error) {
+	fc, err := giocal.LoadGiotypePassengers(filePath)
 	if err != nil {
 		return nil, err
 	}
@@ -97,8 +97,8 @@ func ReadGiotypePassengersForCompanyAndLines(filePath string, company string, ta
 
 
 
-func ReadGiotypeRailHistoryForCompanyAndLines(filePath string, company string, targetLines []string) (*giocaltype.GiotypeN05RailroadSectionFeatureCollection, error) {
-	fc, err := giocal.ReadGiotypeRailHistory(filePath)
+func LoadGiotypeRailHistoryForCompanyAndLines(filePath string, company string, targetLines []string) (*giocaltype.GiotypeN05RailroadSectionFeatureCollection, error) {
+	fc, err := giocal.LoadGiotypeRailHistory(filePath)
 	if err != nil {
 		return nil, err
 	}

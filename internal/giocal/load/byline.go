@@ -1,4 +1,4 @@
-package giocal_read
+package giocal_load
 
 import (
 	"github.com/Shio3001/CLI-Geographic-Calculation/internal/giocal"
@@ -8,11 +8,11 @@ import (
 // 条件に当てはまる行番号をint配列で返す
 
 // 指定したカラムの値がtargetValueと等しい行を探す
-// internal/giocal/read.goを活用
+// internal/giocal/load.goを活用
 
 // それぞれ、対象路線を複数指定して読み込む関数
-func ReadGiotypeRailroadSectionForLines(filePath string, targetLines []string) (*giocaltype.GiotypeRailroadSectionFeatureCollection, error) {
-	fc, err := giocal.ReadGiotypeRailroadSection(filePath)
+func LoadGiotypeRailroadSectionForLines(filePath string, targetLines []string) (*giocaltype.GiotypeRailroadSectionFeatureCollection, error) {
+	fc, err := giocal.LoadGiotypeRailroadSection(filePath)
 	if err != nil {
 		return nil, err
 	}

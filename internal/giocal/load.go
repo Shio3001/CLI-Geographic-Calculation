@@ -11,8 +11,8 @@ import (
 )
 
 // RailroadSection
-func ReadGiotypeRailroadSection(filePath string) (*giocaltype.GiotypeRailroadSectionFeatureCollection, error) {
-	data, err := ReadGeoJSONFile(filePath)
+func LoadGiotypeRailroadSection(filePath string) (*giocaltype.GiotypeRailroadSectionFeatureCollection, error) {
+	data, err := LoadGeoJSONFile(filePath)
 	if err != nil {
 		return nil, err
 	}
@@ -27,8 +27,8 @@ func ReadGiotypeRailroadSection(filePath string) (*giocaltype.GiotypeRailroadSec
 }
 
 // Station
-func ReadGiotypeStation(filePath string) (*giocaltype.GiotypeStationFeatureCollection, error) {
-	data, err := ReadGeoJSONFile(filePath)
+func LoadGiotypeStation(filePath string) (*giocaltype.GiotypeStationFeatureCollection, error) {
+	data, err := LoadGeoJSONFile(filePath)
 	if err != nil {
 		return nil, err
 	}
@@ -43,8 +43,8 @@ func ReadGiotypeStation(filePath string) (*giocaltype.GiotypeStationFeatureColle
 }
 
 // Passengers
-func ReadGiotypePassengers(filePath string) (*giocaltype.GiotypePassengersFeatureCollection, error) {
-	data, err := ReadGeoJSONFile(filePath)
+func LoadGiotypePassengers(filePath string) (*giocaltype.GiotypePassengersFeatureCollection, error) {
+	data, err := LoadGeoJSONFile(filePath)
 	if err != nil {
 		return nil, err
 	}
@@ -59,8 +59,8 @@ func ReadGiotypePassengers(filePath string) (*giocaltype.GiotypePassengersFeatur
 }
 
 
-//readGeoJSONFile は指定されたファイルパスからGeoJSONデータを読み込むヘルパー関数
-func ReadGeoJSONFile(filePath string) ([]byte, error) {
+//loadGeoJSONFile は指定されたファイルパスからGeoJSONデータを読み込むヘルパー関数
+func LoadGeoJSONFile(filePath string) ([]byte, error) {
 	data, err := os.ReadFile(filePath)
 	if err != nil {
 		return nil, err
@@ -68,8 +68,8 @@ func ReadGeoJSONFile(filePath string) ([]byte, error) {
 	return data, nil
 }
 
-func ReadGiotypeStationForLines(filePath string, targetLines []string) (*giocaltype.GiotypeStationFeatureCollection, error) {
-	fc, err := ReadGiotypeStation(filePath)
+func LoadGiotypeStationForLines(filePath string, targetLines []string) (*giocaltype.GiotypeStationFeatureCollection, error) {
+	fc, err := LoadGiotypeStation(filePath)
 	if err != nil {
 		return nil, err
 	}
@@ -91,8 +91,8 @@ func ReadGiotypeStationForLines(filePath string, targetLines []string) (*giocalt
 
 // 開業年度
 
-func ReadGiotypeRailHistory(filePath string) (*giocaltype.GiotypeN05RailroadSectionFeatureCollection, error) {
-	data, err := ReadGeoJSONFile(filePath)
+func LoadGiotypeRailHistory(filePath string) (*giocaltype.GiotypeN05RailroadSectionFeatureCollection, error) {
+	data, err := LoadGeoJSONFile(filePath)
 	if err != nil {
 		return nil, err
 	}
