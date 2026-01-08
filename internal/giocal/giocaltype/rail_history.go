@@ -2,7 +2,6 @@
 package giocaltype
 
 /**
-
 （RailroadSection2.shp）
 （Station2.shp）	属性名
 （かっこ内はshp属性名）	説明	属性の型
@@ -74,9 +73,9 @@ type GiotypeN05Prop struct {
   N05001  string  `json:"N05_001"`
   N05002  string  `json:"N05_002"`
   N05003  string  `json:"N05_003"`
-  N05004  int     `json:"N05_004,string"`   // ←ここ
-  N05005b int     `json:"N05_005b,string"`  // ←実データが文字列なら
-  N05005e int     `json:"N05_005e,string"`  // ←実データが文字列なら
+  N05004  int     `json:"N05_004,string"`   
+  N05005b int     `json:"N05_005b,string"`  
+  N05005e int     `json:"N05_005e,string"`  
   N05006  string  `json:"N05_006"`
   N05007  string  `json:"N05_007"`
   N05008  *string `json:"N05_008"`
