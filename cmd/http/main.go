@@ -22,6 +22,11 @@ type routeKey struct {
 	Resource string
 }
 
+datasets := map[routeKey]datasetHandler{
+	{Year: 2023, Resource: "rail"}:    "dataset_2023_rail.geojson",
+	{Year: 2024, Resource: "station"}: "dataset_2024_station.geojson",
+}
+
 func main(){
 	http.HandleFunc("/", handler)
 	http.ListenAndServe(":8080", nil)
@@ -47,7 +52,21 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		Resource: parts[1],
 	}
 
+	// ルーティングマップからハンドラを取得
+	handler, ok := datasets[key]
+	if !ok {
+		http.Error(w, "resource not found", http.StatusNotFound)
+		return
+	}
+	
+	// ハンドラを呼び出す（ここでは単純にレスポンスを書き込む例）
+	_ = handler // 実際のハンドラ呼び出しは省略
+
 	w.Write([]byte(
 		"year=" + strconv.Itoa(key.Year) + ", resource=" + key.Resource,
 	))
+}
+
+type datasetHandler func hello(filename string) {
+	// ここにデータセットを処理するロジックを実装
 }
