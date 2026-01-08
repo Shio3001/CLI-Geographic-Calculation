@@ -5,30 +5,49 @@
 package main
 
 import (
-	"io"
 	"net/http"
+	"strconv"
+	"strings"
 )
 
+// 連想配列でルーティングを定義するが、下記のようなパスを想定
+// 2023/rail/クエリパラメータ
+// 2024/station/クエリパラメータ
+// クエリパラメータはSQL Likeな文でgeojsonのデータを整理できるようにする
+// 例: /2023/rail?select=company,line,station_from,station_to&where=company='東日本旅客鉄道' and line='山手線'
+// 例: /2024/station?select=station_name,passengers_2022&where=passengers_2022>1000000
 
-func habdleSQLRequest(w http.ResponseWriter, r *http.Request) {
-	sqlQuery := r.URL.Query().Get("query")
-	if sqlQuery == "" {
-		http.Error(w, "Missing 'query' parameter", http.StatusBadRequest)
+type routeKey struct {
+	Year     int
+	Resource string
+}
+
+func main(){
+	http.HandleFunc("/", handler)
+	http.ListenAndServe(":8080", nil)
+}
+
+func handler(w http.ResponseWriter, r *http.Request) {
+	// "/2023/rail" → ["2023", "rail"]
+	path := strings.Trim(r.URL.Path, "/")
+	parts := strings.Split(path, "/")
+	if len(parts) != 2 {
+		http.Error(w, "path must be /{year}/{resource}", http.StatusBadRequest)
 		return
 	}
 
-	// SQL文を解析し、対応するgeojsonデータを取得・処理するロジックをここに実装
-	// 例: resultGeoJSON := executeSQLQuery(sqlQuery)
+	year, err := strconv.Atoi(parts[0])
+	if err != nil {
+		http.Error(w, "invalid year", http.StatusBadRequest)
+		return
+	}
 
-	// 仮のレスポンスとして空のGeoJSONを返す
-	resultGeoJSON := `{"type": "FeatureCollection", "features": []}`
+	key := routeKey{
+		Year:     year,
+		Resource: parts[1],
+	}
 
-	w.Header().Set("Content-Type", "application/json")
-	io.WriteString(w, resultGeoJSON)
-}
-
-
-func main() {
-	http.HandleFunc("/query", habdleSQLRequest)
-	http.ListenAndServe(":8080", nil)
+	w.Write([]byte(
+		"year=" + strconv.Itoa(key.Year) + ", resource=" + key.Resource,
+	))
 }
