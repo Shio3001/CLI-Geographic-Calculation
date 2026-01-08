@@ -11,6 +11,7 @@ import (
 
 	"github.com/Shio3001/CLI-Geographic-Calculation/internal/giocal"
 	"github.com/Shio3001/CLI-Geographic-Calculation/internal/giocal/giocaltype"
+	giocal_read "github.com/Shio3001/CLI-Geographic-Calculation/internal/giocal/read"
 )
 
 //現在のミリ秒取得
@@ -58,12 +59,12 @@ func main() {
 
 	// ---- Read stations / sections with optional filters ----
 	if len(targetLines) > 0 || targetCompany != "" {
-		stFC, err = giocal.ReadGiotypeStationForCompanyAndLines(*stationPath, targetCompany, targetLines)
+		stFC, err = giocal_read.ReadGiotypeStationForCompanyAndLines(*stationPath, targetCompany, targetLines)
 		if err != nil {
 			die(err)
 		}
 
-		rrFC, err = giocal.ReadGiotypeRailroadSectionForCompanyAndLines(*sectionPath, targetCompany, targetLines)
+		rrFC, err = giocal_read.ReadGiotypeRailroadSectionForCompanyAndLines(*sectionPath, targetCompany, targetLines)
 		if err != nil {
 			die(err)
 		}
@@ -79,11 +80,11 @@ func main() {
 		}
 	}
 
-	passengersFC, err = giocal.ReadGiotypePassengersForCompanyAndLines(*passengersPath , targetCompany, targetLines)
+	passengersFC, err = giocal_read.ReadGiotypePassengersForCompanyAndLines(*passengersPath , targetCompany, targetLines)
 	if err != nil {
 		die(err)
 	}
-	historyFC, err = giocal.ReadGiotypeRailHistoryForCompanyAndLines(*history, targetCompany, targetLines)
+	historyFC, err = giocal_read.ReadGiotypeRailHistoryForCompanyAndLines(*history, targetCompany, targetLines)
 	if err != nil {
 		die(err)
 	}

@@ -2,7 +2,6 @@
 package giocaltype
 
 /**
-
 （RailroadSection2.shp）
 （Station2.shp）	属性名
 （かっこ内はshp属性名）	説明	属性の型

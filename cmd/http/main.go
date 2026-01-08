@@ -13,18 +13,24 @@ import (
 // 連想配列でルーティングを定義するが、下記のようなパスを想定
 // 2023/rail/クエリパラメータ
 // 2024/station/クエリパラメータ
-// クエリパラメータはSQL Likeな文でgeojsonのデータを整理できるようにする
-// 例: /2023/rail?select=company,line,station_from,station_to&where=company='東日本旅客鉄道' and line='山手線'
-// 例: /2024/station?select=station_name,passengers_2022&where=passengers_2022>1000000
+// クエリパラメータはSQ文でgeojsonのデータを整理できるようにする
+// 例: /2023/rail?query=SELECT * FROM rails WHERE length > 1000
+// 例: /2024/station?query=SELECT * FROM stations WHERE city = 'Tokyo'
+
 
 type routeKey struct {
 	Year     int
 	Resource string
 }
 
-datasets := map[routeKey]datasetHandler{
-	{Year: 2023, Resource: "rail"}:    "dataset_2023_rail.geojson",
-	{Year: 2024, Resource: "station"}: "dataset_2024_station.geojson",
+type Dataset struct {
+	Handler  datasetHandler
+	Filename string
+}
+
+var datasets = map[routeKey]Dataset{
+	{Year: 2023, Resource: "rail"}:    { handleRail, "rails_2023.geojson" },
+	{Year: 2024, Resource: "station"}: { handleStation, "stations_2024.geojson" },
 }
 
 func main(){
@@ -67,6 +73,11 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	))
 }
 
-type datasetHandler func hello(filename string) {
-	// ここにデータセットを処理するロジックを実装
+type datasetHandler func(filename string)
+
+func handleRail(filename string) {
+	
+}
+func handleStation(filename string) {
+
 }
