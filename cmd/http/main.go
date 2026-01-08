@@ -25,12 +25,33 @@ type routeKey struct {
 
 type Dataset struct {
 	Handler  datasetHandler
-	Filename string
+	Files DatasetTrain
 }
 
+type DatasetTrain struct {
+	rail string
+	station string
+	passengers string
+}
+
+
 var datasets = map[routeKey]Dataset{
-	{Year: 2023, Resource: "rail"}:    { handleRail, "rails_2023.geojson" },
-	{Year: 2024, Resource: "station"}: { handleStation, "stations_2024.geojson" },
+	{Year: 2023, Resource: "rail"}: {
+		Handler: handleRail,
+		Files: DatasetTrain{
+			rail: "data/2023/railroad_section.geojson",
+			station: "data/2023/station.geojson",
+			passengers: "data/2023/passengers.geojson",
+		},
+	},
+	{Year: 2023, Resource: "station"}: {
+		Handler: handleStation,
+		Files: DatasetTrain{
+			rail: "data/2023/railroad_section.geojson",
+			station: "data/2023/station.geojson",
+			passengers: "data/2023/passengers.geojson",
+		},
+	},
 }
 
 func main(){
