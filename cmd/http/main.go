@@ -39,17 +39,17 @@ var datasets = map[routeKey]Dataset{
 	{Year: 2023, Resource: "rail"}: {
 		Handler: handleRail,
 		Files: DatasetTrain{
-			rail: "data/2023/railroad_section.geojson",
-			station: "data/2023/station.geojson",
-			passengers: "data/2023/passengers.geojson",
+			rail: "giodata/2023/railroad_section.geojson",
+			station: "giodata/2023/station.geojson",
+			passengers: "giodata/2023/passengers.geojson",
 		},
 	},
 	{Year: 2023, Resource: "station"}: {
 		Handler: handleStation,
 		Files: DatasetTrain{
-			rail: "data/2023/railroad_section.geojson",
-			station: "data/2023/station.geojson",
-			passengers: "data/2023/passengers.geojson",
+			rail: "giodata/2023/railroad_section.geojson",
+			station: "giodata/2023/station.geojson",
+			passengers: "giodata/2023/passengers.geojson",
 		},
 	},
 }
