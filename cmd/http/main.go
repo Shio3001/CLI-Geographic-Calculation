@@ -17,9 +17,9 @@ import (
 // 例: /2023/rail?query=SELECT * FROM rails WHERE length > 1000
 // 例: /2024/station?query=SELECT * FROM stations WHERE city = 'Tokyo'
 
-
+// ルーティング用のキー
+// routeKeyの年は、データセット内における年次データを用いるとき、どの年度を使うかを指定するためのもの
 type routeKey struct {
-	Year     int
 	Resource string
 }
 
@@ -37,7 +37,7 @@ type DatasetResource struct {
 
 
 var datasets = map[routeKey]Dataset{
-	{Year: 2023, Resource: "rail"}: {
+	{Resource: "rail"}: {
 		Handler: handleRail,
 		Resources: DatasetResource{
 			rail: "internal/giodata/N02-23_RailroadSection.json",
@@ -57,7 +57,7 @@ func main(){
 
 func handler(w http.ResponseWriter, r *http.Request) {
 	println("[HANDLER] : ", r.URL.Path)
-	// "/2023/rail" → ["2023", "rail"]
+	// "/rail/2023/" → ["rail", "2023"]
 	path := strings.Trim(r.URL.Path, "/")
 	parts := strings.Split(path, "/")
 	if len(parts) != 2 {
@@ -65,15 +65,14 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	year, err := strconv.Atoi(parts[0])
+	year, err := strconv.Atoi(parts[1])
 	if err != nil {
 		http.Error(w, "invalid year", http.StatusBadRequest)
 		return
 	}
 
 	key := routeKey{
-		Year:     year,
-		Resource: parts[1],
+		Resource: parts[0],
 	}
 
 	// ルーティングマップからハンドラを取得
@@ -87,9 +86,9 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	_ = handler // 実際のハンドラ呼び出しは省略
 
 	w.Write([]byte(
-		"year=" + strconv.Itoa(key.Year) + ", resource=" + key.Resource,
+		"year=" + strconv.Itoa(year) + ", resource=" + key.Resource,
 	))
 }
 
-type datasetHandler func(datasetResource DatasetResource)
-func handleRail(datasetResource DatasetResource) {}
+type datasetHandler func(datasetResource DatasetResource , year int)
+func handleRail(datasetResource DatasetResource, year int) {}
