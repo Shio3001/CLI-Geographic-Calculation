@@ -5,6 +5,7 @@
 package main
 
 import (
+	"CLI-Geographic-Calculation/internal/giocal/sqlreq"
 	"net/http"
 	"strconv"
 	"strings"
@@ -83,7 +84,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sqlreq.parseSQLQuery("SELECT * FROM " + key.Resource + " WHERE year = " + strconv.Itoa(year));
+	sqlreq.ParseSQLQuery("SELECT * FROM " + key.Resource + " WHERE year = " + strconv.Itoa(year));
 	
 	// ハンドラを呼び出す（ここでは単純にレスポンスを書き込む例）
 	_ = handler // 実際のハンドラ呼び出しは省略

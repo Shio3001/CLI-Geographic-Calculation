@@ -5,7 +5,7 @@ import (
 	pg_query "github.com/pganalyze/pg_query_go/v6"
 )
 
-func parseSQLQuery(query string)  {
+func ParseSQLQuery(query string)  {
 	parsed, err := pg_query.ParseToJSON(query)
 	if err != nil {
 		panic(err)
