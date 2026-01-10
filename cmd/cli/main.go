@@ -9,9 +9,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Shio3001/CLI-Geographic-Calculation/internal/giocal"
-	"github.com/Shio3001/CLI-Geographic-Calculation/internal/giocal/giocaltype"
-	giocal_load "github.com/Shio3001/CLI-Geographic-Calculation/internal/giocal/load"
+	"CLI-Geographic-Calculation/internal/giocal"
+	"CLI-Geographic-Calculation/internal/giocal/giocaltype"
+	giocal_load "CLI-Geographic-Calculation/internal/giocal/load"
 )
 
 //現在のミリ秒取得
