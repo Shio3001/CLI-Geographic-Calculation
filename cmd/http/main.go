@@ -77,6 +77,20 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		Resource: parts[0],
 	}
 
+	// パラメータでSQLクエリを受け取る
+	query := r.URL.Query().Get("query")
+	if query == "" {
+		http.Error(w, "missing query parameter", http.StatusBadRequest)
+		return
+	}
+
+	// パラメータ（Options）で駅から駅までのルート探索なども指定できるようにする
+	routeSearch := r.URL.Query().Get("rs")
+	if routeSearch != "" {
+		// ルート探索のパラメータ処理（省略）
+		println("[ROUTE SEARCH] : ", routeSearch)
+	}
+
 	// ルーティングマップからハンドラを取得
 	handler, ok := datasets[key]
 	if !ok {
@@ -84,7 +98,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sqlreq.ParseSQLQuery("SELECT * FROM " + key.Resource + " WHERE year = " + strconv.Itoa(year));
+	sqlreq.ParseSQLQuery(query)
 	
 	// ハンドラを呼び出す（ここでは単純にレスポンスを書き込む例）
 	_ = handler // 実際のハンドラ呼び出しは省略
