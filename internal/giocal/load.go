@@ -7,7 +7,7 @@ import (
 	"encoding/json"
 	"os"
 
-	"github.com/Shio3001/CLI-Geographic-Calculation/internal/giocal/giocaltype"
+	"CLI-Geographic-Calculation/internal/giocal/giocaltype"
 )
 
 // RailroadSection

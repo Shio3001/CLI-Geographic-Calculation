@@ -1,8 +1,8 @@
 package giocal_load
 
 import (
-	"github.com/Shio3001/CLI-Geographic-Calculation/internal/giocal"
-	"github.com/Shio3001/CLI-Geographic-Calculation/internal/giocal/giocaltype"
+	"CLI-Geographic-Calculation/internal/giocal"
+	"CLI-Geographic-Calculation/internal/giocal/giocaltype"
 )
 
 // それぞれ、鉄道会社と、対象路線を複数指定して読み込む関数(AND条件)

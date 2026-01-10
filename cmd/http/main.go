@@ -16,6 +16,7 @@ import (
 // クエリパラメータはSQ文でgeojsonのデータを整理できるようにする
 // 例: /2023/rail?query=SELECT * FROM rails WHERE length > 1000
 // 例: /2024/station?query=SELECT * FROM stations WHERE city = 'Tokyo'
+// 解析するSQL Likeな文は通常のSQL文に近い形で実装する
 
 // ルーティング用のキー
 // routeKeyの年は、データセット内における年次データを用いるとき、どの年度を使うかを指定するためのもの
@@ -81,6 +82,8 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "resource not found", http.StatusNotFound)
 		return
 	}
+
+	sqlreq.parseSQLQuery("SELECT * FROM " + key.Resource + " WHERE year = " + strconv.Itoa(year));
 	
 	// ハンドラを呼び出す（ここでは単純にレスポンスを書き込む例）
 	_ = handler // 実際のハンドラ呼び出しは省略
@@ -91,4 +94,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 }
 
 type datasetHandler func(datasetResource DatasetResource , year int)
-func handleRail(datasetResource DatasetResource, year int) {}
+
+func handleRail(datasetResource DatasetResource, year int) {
+	println("[HANDLE RAIL] Year:", year, "Rail Resource:", datasetResource.rail)
+}

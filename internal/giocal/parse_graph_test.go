@@ -2,8 +2,8 @@ package giocal
 
 // テストコード
 import (
-	"github.com/Shio3001/CLI-Geographic-Calculation/internal/giocal/giocaltype"
-	"github.com/Shio3001/CLI-Geographic-Calculation/internal/giocal/graphstructure"
+	"CLI-Geographic-Calculation/internal/giocal/giocaltype"
+	"CLI-Geographic-Calculation/internal/giocal/graphstructure"
 )
 
 //ConvertGiotypeStationToGraphのテスト用関数

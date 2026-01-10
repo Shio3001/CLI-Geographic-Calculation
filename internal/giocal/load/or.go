@@ -4,8 +4,8 @@
 package giocal_load
 
 import (
-	"github.com/Shio3001/CLI-Geographic-Calculation/internal/giocal"
-	"github.com/Shio3001/CLI-Geographic-Calculation/internal/giocal/giocaltype"
+	"CLI-Geographic-Calculation/internal/giocal"
+	"CLI-Geographic-Calculation/internal/giocal/giocaltype"
 )
 func LoadGiotypeRailroadSectionForCompanyOrLines(filePath string, company string, targetLines []string) (*giocaltype.GiotypeRailroadSectionFeatureCollection, error) {
 	fc, err := giocal.LoadGiotypeRailroadSection(filePath)
