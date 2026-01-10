@@ -25,41 +25,38 @@ type routeKey struct {
 
 type Dataset struct {
 	Handler  datasetHandler
-	Files DatasetTrain
+	Resources DatasetResource
 }
 
-type DatasetTrain struct {
+type DatasetResource struct {
 	rail string
 	station string
-	passengers string
+	history string
+	passengers string 
 }
 
 
 var datasets = map[routeKey]Dataset{
 	{Year: 2023, Resource: "rail"}: {
 		Handler: handleRail,
-		Files: DatasetTrain{
-			rail: "giodata/2023/railroad_section.geojson",
-			station: "giodata/2023/station.geojson",
-			passengers: "giodata/2023/passengers.geojson",
+		Resources: DatasetResource{
+			rail: "internal/giodata/N02-23_RailroadSection.json",
+			station: "internal/giodata/N02-23Station.json",
+			history: "internal/giodata/N05-24_RailroadHistory.json",
+			passengers: "internal/giodata/S12-24_Passengers.json",
 		},
 	},
-	{Year: 2023, Resource: "station"}: {
-		Handler: handleStation,
-		Files: DatasetTrain{
-			rail: "giodata/2023/railroad_section.geojson",
-			station: "giodata/2023/station.geojson",
-			passengers: "giodata/2023/passengers.geojson",
-		},
-	},
+
 }
 
 func main(){
+	println("[HTTP] GIOCAL")
 	http.HandleFunc("/", handler)
 	http.ListenAndServe(":8080", nil)
 }
 
 func handler(w http.ResponseWriter, r *http.Request) {
+	println("[HANDLER] : ", r.URL.Path)
 	// "/2023/rail" → ["2023", "rail"]
 	path := strings.Trim(r.URL.Path, "/")
 	parts := strings.Split(path, "/")
@@ -94,11 +91,5 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	))
 }
 
-type datasetHandler func(filename string)
-
-func handleRail(filename string) {
-	
-}
-func handleStation(filename string) {
-
-}
+type datasetHandler func(datasetResource DatasetResource)
+func handleRail(datasetResource DatasetResource) {}
