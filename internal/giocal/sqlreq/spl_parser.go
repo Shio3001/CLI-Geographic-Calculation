@@ -73,5 +73,5 @@ func GetWhereClause(stmt *pg_query.Node) *pg_query.Node  {
 
 func GetGroupByClauses(stmt *pg_query.Node) []*pg_query.Node  {
     selectStmt := stmt.GetSelectStmt()
-    return selectStmt.GetGroupClause()
+    return selectStmt.GroupClause
 }

@@ -5,6 +5,7 @@
 package main
 
 import (
+	"CLI-Geographic-Calculation/internal/giocal/giocaltype"
 	"CLI-Geographic-Calculation/internal/giocal/sqlreq"
 	"net/http"
 	"strconv"
@@ -22,30 +23,22 @@ import (
 // ルーティング用のキー
 // routeKeyの年は、データセット内における年次データを用いるとき、どの年度を使うかを指定するためのもの
 type routeKey struct {
+	year    int
 	Resource string
 }
 
 type Dataset struct {
 	Handler  datasetHandler
-	Resources DatasetResource
-}
-
-type DatasetResource struct {
-	rail string
-	station string
-	history string
-	passengers string 
+	Resources giocaltype.DatasetResourcePath
 }
 
 
 var datasets = map[routeKey]Dataset{
-	{Resource: "rail"}: {
+	{year: 2023, Resource: "rail"}: {
 		Handler: handleRail,
-		Resources: DatasetResource{
-			rail: "internal/giodata/N02-23_RailroadSection.json",
-			station: "internal/giodata/N02-23Station.json",
-			history: "internal/giodata/N05-24_RailroadHistory.json",
-			passengers: "internal/giodata/S12-24_Passengers.json",
+		Resources: giocaltype.DatasetResourcePath{
+			Rail: "internal/giodata_public/N02-23_RailroadSection.json",
+			Station: "internal/giodata_public/N02-23Station.json",
 		},
 	},
 
@@ -75,6 +68,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 
 	key := routeKey{
 		Resource: parts[0],
+		year:    year,
 	}
 
 	// パラメータでSQLクエリを受け取る
@@ -108,8 +102,8 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	))
 }
 
-type datasetHandler func(datasetResource DatasetResource , year int)
+type datasetHandler func(datasetResource giocaltype.DatasetResourcePath , year int)
 
-func handleRail(datasetResource DatasetResource, year int) {
-	println("[HANDLE RAIL] Year:", year, "Rail Resource:", datasetResource.rail)
+func handleRail(datasetResource giocaltype.DatasetResourcePath, year int) {
+	println("[HANDLE RAIL] Year:", year, "Rail Resource:", datasetResource.Rail)
 }
