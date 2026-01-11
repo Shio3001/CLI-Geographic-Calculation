@@ -70,3 +70,8 @@ func GetWhereClause(stmt *pg_query.Node) *pg_query.Node  {
 	selectStmt := stmt.GetSelectStmt()
 	return selectStmt.WhereClause
 }
+
+func GetGroupByClauses(stmt *pg_query.Node) []*pg_query.Node  {
+    selectStmt := stmt.GetSelectStmt()
+    return selectStmt.GetGroupClause()
+}
