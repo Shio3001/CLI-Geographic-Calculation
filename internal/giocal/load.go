@@ -4,11 +4,26 @@
 package giocal
 
 import (
+	"CLI-Geographic-Calculation/internal/giocal/giocaltype"
 	"encoding/json"
 	"os"
-
-	"CLI-Geographic-Calculation/internal/giocal/giocaltype"
 )
+
+
+func LoadDatasetResource(path giocaltype.DatasetResourcePath) (*giocaltype.DatasetResource, error) {
+	railFC, err := LoadGiotypeRailroadSection(path.Rail)
+	if err != nil {
+		return nil, err
+	}
+	stationFC, err := LoadGiotypeStation(path.Station)
+	if err != nil {
+		return nil,  err
+	}
+	return &giocaltype.DatasetResource{
+		Rail: railFC,
+		Station: stationFC,
+	}, nil
+}
 
 // RailroadSection
 func LoadGiotypeRailroadSection(filePath string) (*giocaltype.GiotypeRailroadSectionFeatureCollection, error) {
