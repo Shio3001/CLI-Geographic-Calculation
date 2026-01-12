@@ -14,7 +14,7 @@ import (
 	giocal_load "CLI-Geographic-Calculation/internal/giocal/load"
 )
 
-//現在のミリ秒取得
+// 現在のミリ秒取得
 func currentMillis() int64 {
 	return int64(float64(time.Now().UnixNano()) / 1e6)
 }
@@ -24,7 +24,7 @@ func main() {
 		stationPath    = flag.String("station", "", "path to station GeoJSON (N02 station)")
 		sectionPath    = flag.String("section", "", "path to railroad section GeoJSON (N02 railroad section)")
 		passengersPath = flag.String("passengers", "", "path to passengers GeoJSON (S12 passengers)")
-		history = flag.String("history", "", "path to railroad history GeoJSON (N05 railroad history)")
+		history        = flag.String("history", "", "path to railroad history GeoJSON (N05 railroad history)")
 
 		company  = flag.String("company", "", "filter by company name (e.g. \"東日本旅客鉄道\")")
 		linesRaw = flag.String("lines", "", "comma-separated target line names (e.g. \"山手線,中央線\")")
@@ -40,11 +40,9 @@ func main() {
 		os.Exit(2)
 	}
 
-	
-
 	//実行開始時間出力(ミリ秒単位)
 	startTime := currentMillis()
-	fmt.Fprintf(os.Stderr, "Start time: %d ms\n",startTime)
+	fmt.Fprintf(os.Stderr, "Start time: %d ms\n", startTime)
 
 	targetLines := parseCSV(*linesRaw)
 	targetCompany := strings.TrimSpace(*company)
@@ -80,7 +78,7 @@ func main() {
 		}
 	}
 
-	passengersFC, err = giocal_load.LoadGiotypePassengersForCompanyAndLines(*passengersPath , targetCompany, targetLines)
+	passengersFC, err = giocal_load.LoadGiotypePassengersForCompanyAndLines(*passengersPath, targetCompany, targetLines)
 	if err != nil {
 		die(err)
 	}
@@ -89,12 +87,10 @@ func main() {
 		die(err)
 	}
 
-	g := giocal.ConvertGiotypeStationToGraph(stFC, rrFC, passengersFC, historyFC)
+	g := giocal.ConvertGiotypeStationToGraphPH(stFC, rrFC, passengersFC, historyFC)
 
 	convertTime := currentMillis()
-	fmt.Fprintf(os.Stderr, "Conversion time: %d ms\n", convertTime - startTime)
-
-
+	fmt.Fprintf(os.Stderr, "Conversion time: %d ms\n", convertTime-startTime)
 
 	var b []byte
 	if *pretty {
@@ -105,8 +101,6 @@ func main() {
 	if err != nil {
 		die(err)
 	}
-
-	
 
 	if *out == "" {
 		fmt.Println(string(b))
@@ -123,12 +117,12 @@ func main() {
 
 	//実行終了時間出力(ミリ秒単位)
 	endTime := currentMillis()
-	
-	fmt.Fprintf(os.Stderr, "End time: %d ms\n",endTime)
+
+	fmt.Fprintf(os.Stderr, "End time: %d ms\n", endTime)
 
 	//計測時刻出力
-	fmt.Fprintf(os.Stderr, "Total execution time: %d ms\n", endTime - startTime)
-	fmt.Fprintf(os.Stderr, "Graph conversion time: %d ms\n", convertTime - startTime)
+	fmt.Fprintf(os.Stderr, "Total execution time: %d ms\n", endTime-startTime)
+	fmt.Fprintf(os.Stderr, "Graph conversion time: %d ms\n", convertTime-startTime)
 }
 
 func parseCSV(s string) []string {

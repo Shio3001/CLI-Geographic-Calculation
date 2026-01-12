@@ -2,17 +2,21 @@ package sqlreq
 
 //github.com/pganalyze/pg_query_go/v6を使う
 import (
+	"CLI-Geographic-Calculation/internal/giocal"
+	"CLI-Geographic-Calculation/internal/giocal/giocaltype"
+	"CLI-Geographic-Calculation/internal/giocal/graphstructure"
+	"CLI-Geographic-Calculation/internal/giocal/linefilter"
+
 	pg_query "github.com/pganalyze/pg_query_go/v6"
 )
 
-func ParseSQLQuery(query string) ( *pg_query.ParseResult )  {
+func ParseSQLQuery(query string) *pg_query.ParseResult {
 	parsed, err := pg_query.Parse(query)
 	if err != nil {
 		panic(err)
 	}
 	return parsed
 }
-
 
 /**
 {"version":170004,"stmts":[{"stmt":{"SelectStmt":{"targetList":[{"ResTarget":{"val":{"ColumnRef":{"fields":[{"A_Star":{}}],"location":7}},"location":7}}],"fromClause":[{"RangeVar":{"relname":"rail","inh":true,"relpersistence":"p","location":14}}],"whereClause":{"A_Expr":{"kind":"AEXPR_OP","name":[{"String":{"sval":"="}}],"lexpr":{"ColumnRef":{"fields":[{"String":{"sval":"year"}}],"location":25}},"rexpr":{"A_Const":{"ival":{"ival":2023},"location":32}},"location":30}},"limitOption":"LIMIT_OPTION_DEFAULT","op":"SETOP_NONE"}}}]}

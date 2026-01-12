@@ -9,24 +9,11 @@ import (
 	"CLI-Geographic-Calculation/internal/giocal/graphstructure"
 )
 
-// ConvertGiotypeStationToGraph
-// 駅や座標をノード、路線区間をエッジとして Graph に変換する。
-// 駅が複数座標を持つ場合:
-//  1) 同一路線(会社+路線名)の路線座標群に最も近い駅座標を代表にする
-//  2) 同一路線が見つからない場合、全路線座標群に最も近い駅座標を代表にする（なければ先頭）
-//
-// 距離は地球平面仮定：
-//   dxKm = (lon2-lon1)/LongitudePerKm
-//   dyKm = (lat2-lat1)/LatitudePerKm
-//   distKm = sqrt(dxKm^2 + dyKm^2)
 func ConvertGiotypeStationToGraph(
 	stationFC *giocaltype.GiotypeStationFeatureCollection,
 	railroadSectionFC *giocaltype.GiotypeRailroadSectionFeatureCollection,
-	passengersFC *giocaltype.GiotypePassengersFeatureCollection,
-	historyFC *giocaltype.GiotypeN05RailroadSectionFeatureCollection,
 ) *graphstructure.Graph {
 
-	// TODO: graphstructure に合わせて初期化を調整
 	g := &graphstructure.Graph{
 		Nodes: map[string]*graphstructure.Node{},
 		Edges: []*graphstructure.Edge{},
@@ -81,8 +68,6 @@ func ConvertGiotypeStationToGraph(
 					if fromID != "" && toID != "" && fromID != toID {
 						// TODO: graphstructure.Edge のフィールド名に合わせて修正
 
-						
-
 						g.Edges = append(g.Edges, &graphstructure.Edge{
 							From:     fromID,
 							To:       toID,
@@ -94,7 +79,6 @@ func ConvertGiotypeStationToGraph(
 								"company": sec.Properties.N02004,
 								"line":    sec.Properties.N02003,
 								"sec_i":   fmt.Sprintf("%d", i),
-								"open_year": fmt.Sprintf("%d",getOpeningYear(historyFC,sec.Properties.N02004 ,sec.Properties.N02003)),
 							},
 						})
 					}
@@ -121,13 +105,6 @@ func ConvertGiotypeStationToGraph(
 			continue
 		}
 
-
-		Passengers := getPassengersDataByCode(passengersFC, st.Properties.N02005c)
-		if len(Passengers) == 0 {
-			Passengers = getPassengersDataByName(passengersFC, st.Properties.N02005)
-		}
-
-
 		// TODO: graphstructure.Node のフィールド名に合わせて修正
 		g.Nodes[stationID] = &graphstructure.Node{
 			ID:   stationID,
@@ -135,6 +112,160 @@ func ConvertGiotypeStationToGraph(
 			Name: st.Properties.N02005,
 			Lon:  chosenLon,
 			Lat:  chosenLat,
+			Meta: map[string]string{
+				"station_code": st.Properties.N02005c,
+				"group_code":   st.Properties.N02005g,
+				"company":      st.Properties.N02004,
+				"line":         st.Properties.N02003,
+			},
+		}
+
+		// 駅ノード → 近い座標ノード を接続（駅が路線上のどこに紐づくか）
+		// ※ “路線情報にある座標を選択” は代表座標選びで実現してるが、
+		//    ここで座標ノードにもリンクしておくと、後で可視化/探索が楽。
+		closestCoordID := findClosestCoordNodeID(chosenLon, chosenLat,
+			coordNodesByLineKey[makeLineKey(st.Properties.N02004, st.Properties.N02003)],
+			allCoordNodes,
+		)
+		if closestCoordID != "" {
+			g.Edges = append(g.Edges, &graphstructure.Edge{
+				From:     stationID,
+				To:       closestCoordID,
+				Kind:     "station_at",
+				WeightKm: distKm(chosenLon, chosenLat, g.Nodes[closestCoordID].Lon, g.Nodes[closestCoordID].Lat),
+				Meta: map[string]string{
+					"company": st.Properties.N02004,
+					"line":    st.Properties.N02003,
+				},
+			})
+		}
+	}
+
+	return g
+}
+
+// ConvertGiotypeStationToGraph
+// 駅や座標をノード、路線区間をエッジとして Graph に変換する。
+// 駅が複数座標を持つ場合:
+//  1. 同一路線(会社+路線名)の路線座標群に最も近い駅座標を代表にする
+//  2. 同一路線が見つからない場合、全路線座標群に最も近い駅座標を代表にする（なければ先頭）
+//
+// 距離は地球平面仮定：
+//
+//	dxKm = (lon2-lon1)/LongitudePerKm
+//	dyKm = (lat2-lat1)/LatitudePerKm
+//	distKm = sqrt(dxKm^2 + dyKm^2)
+func ConvertGiotypeStationToGraphPH(
+	stationFC *giocaltype.GiotypeStationFeatureCollection,
+	railroadSectionFC *giocaltype.GiotypeRailroadSectionFeatureCollection,
+	passengersFC *giocaltype.GiotypePassengersFeatureCollection,
+	historyFC *giocaltype.GiotypeN05RailroadSectionFeatureCollection,
+) *graphstructure.Graph {
+
+	g := &graphstructure.Graph{
+		Nodes: map[string]*graphstructure.Node{},
+		Edges: []*graphstructure.Edge{},
+	}
+
+	coordNodeIDByKey := map[string]string{} // "lon,lat" -> nodeID
+	allCoordNodes := make([]coordNodeRef, 0, 4096)
+
+	// 路線(会社+路線名) -> その路線に属する座標ノード一覧
+	coordNodesByLineKey := map[string][]coordNodeRef{}
+
+	for i, sec := range railroadSectionFC.Features {
+		lineKey := makeLineKey(sec.Properties.N02004, sec.Properties.N02003)
+
+		coords := sec.Geometry.Coordinates // [][]float64 期待: [][lon,lat]
+		for j := 0; j < len(coords); j++ {
+			lon, lat, ok := pickLonLat2(coords[j])
+			if !ok {
+				continue
+			}
+
+			key := coordKey(lon, lat)
+			nodeID, exists := coordNodeIDByKey[key]
+			if !exists {
+				nodeID = fmt.Sprintf("coord:%s", key)
+				coordNodeIDByKey[key] = nodeID
+
+				g.Nodes[nodeID] = &graphstructure.Node{
+					ID:   nodeID,
+					Kind: "coord",
+					Name: "", // 座標ノードは名前なし
+					Lon:  lon,
+					Lat:  lat,
+				}
+
+				ref := coordNodeRef{ID: nodeID, Lon: lon, Lat: lat}
+				allCoordNodes = append(allCoordNodes, ref)
+				coordNodesByLineKey[lineKey] = append(coordNodesByLineKey[lineKey], ref)
+			} else {
+				// 既存ノード参照を lineKey に積む（重複は後で軽く除去）
+				ref := coordNodeRef{ID: nodeID, Lon: lon, Lat: lat}
+				coordNodesByLineKey[lineKey] = append(coordNodesByLineKey[lineKey], ref)
+			}
+
+			// 連続点同士をエッジで結ぶ（路線区間エッジ）
+			if j > 0 {
+				prevLon, prevLat, okPrev := pickLonLat2(coords[j-1])
+				if okPrev {
+					prevKey := coordKey(prevLon, prevLat)
+					fromID := coordNodeIDByKey[prevKey]
+					toID := coordNodeIDByKey[key]
+					if fromID != "" && toID != "" && fromID != toID {
+						// TODO: graphstructure.Edge のフィールド名に合わせて修正
+
+						g.Edges = append(g.Edges, &graphstructure.Edge{
+							From:     fromID,
+							To:       toID,
+							Kind:     "rail",
+							WeightKm: distKm(prevLon, prevLat, lon, lat),
+							// Optional: 会社/路線などを props に入れるならここ
+							// Props: map[string]string{"company": sec.Properties.N02004, "line": sec.Properties.N02003},
+							Meta: map[string]string{
+								"company":   sec.Properties.N02004,
+								"line":      sec.Properties.N02003,
+								"sec_i":     fmt.Sprintf("%d", i),
+								"open_year": fmt.Sprintf("%d", getOpeningYear(historyFC, sec.Properties.N02004, sec.Properties.N02003)),
+							},
+						})
+					}
+				}
+			}
+		}
+	}
+
+	// lineKey ごとの座標参照に重複があるので簡易に uniq 化しておく（距離探索が軽くなる）
+	for k, refs := range coordNodesByLineKey {
+		coordNodesByLineKey[k] = uniqCoordRefs(refs)
+	}
+
+	for _, st := range stationFC.Features {
+		stationID := makeStationID(st.Properties.N02005c, st.Properties.N02005g, st.Properties.N02004, st.Properties.N02003, st.Properties.N02005)
+
+		chosenLon, chosenLat, chosenOK := chooseStationRepresentativeLonLat(
+			st.Geometry.Coordinates,
+			coordNodesByLineKey[makeLineKey(st.Properties.N02004, st.Properties.N02003)],
+			allCoordNodes,
+		)
+		if !chosenOK {
+			// 駅に座標が無いケース（通常ないはず）
+			continue
+		}
+
+		Passengers := getPassengersDataByCode(passengersFC, st.Properties.N02005c)
+		if len(Passengers) == 0 {
+			Passengers = getPassengersDataByName(passengersFC, st.Properties.N02005)
+		}
+
+		// TODO: graphstructure.Node のフィールド名に合わせて修正
+		g.Nodes[stationID] = &graphstructure.Node{
+			ID:         stationID,
+			Kind:       "station",
+			Name:       st.Properties.N02005,
+			Lon:        chosenLon,
+			Lat:        chosenLat,
 			Passengers: Passengers,
 			Meta: map[string]string{
 				"station_code": st.Properties.N02005c,
@@ -231,9 +362,9 @@ func uniqCoordRefs(refs []coordNodeRef) []coordNodeRef {
 }
 
 // 駅の代表座標を選ぶ:
-//  1) 同一路線の座標ノード群があるなら、それに最も近い駅座標
-//  2) なければ全体座標ノード群に最も近い駅座標
-//  3) そもそも座標ノードが無ければ stations の先頭
+//  1. 同一路線の座標ノード群があるなら、それに最も近い駅座標
+//  2. なければ全体座標ノード群に最も近い駅座標
+//  3. そもそも座標ノードが無ければ stations の先頭
 func chooseStationRepresentativeLonLat(
 	stationCoords [][]float64,
 	lineCoordNodes []coordNodeRef,
@@ -323,90 +454,89 @@ func findClosestCoordNodeID(
 	return bestID
 }
 
-
-
 /**
-	S12001  string  `json:"S12_001"`  // 駅名
-	S12001c string  `json:"S12_001c"` // 駅コード
-	S12001g string  `json:"S12_001g"` // グループコード
-	S12002  string  `json:"S12_002"`  // 運営会社
-	S12003  string  `json:"S12_003"`  // 路線名
-	S12004  float64 `json:"S12_004"`  // 鉄道区分
-	S12005  float64 `json:"S12_005"`  // 事業者種別
+S12001  string  `json:"S12_001"`  // 駅名
+S12001c string  `json:"S12_001c"` // 駅コード
+S12001g string  `json:"S12_001g"` // グループコード
+S12002  string  `json:"S12_002"`  // 運営会社
+S12003  string  `json:"S12_003"`  // 路線名
+S12004  float64 `json:"S12_004"`  // 鉄道区分
+S12005  float64 `json:"S12_005"`  // 事業者種別
 
-	S12006 float64 `json:"S12_006"` // 重複コード2011
-	S12007 float64 `json:"S12_007"` // データ有無コード2011
-	S12008 *string `json:"S12_008"` // 備考2011
-	S12009 float64 `json:"S12_009"` // 乗降客数2011（整数相当だがJSONがfloatなので float64）
+S12006 float64 `json:"S12_006"` // 重複コード2011
+S12007 float64 `json:"S12_007"` // データ有無コード2011
+S12008 *string `json:"S12_008"` // 備考2011
+S12009 float64 `json:"S12_009"` // 乗降客数2011（整数相当だがJSONがfloatなので float64）
 
-	S12010 float64 `json:"S12_010"` // 重複コード2012
-	S12011 float64 `json:"S12_011"` // データ有無コード2012
-	S12012 *string `json:"S12_012"` // 備考2012
-	S12013 float64 `json:"S12_013"` // 乗降客数2012
+S12010 float64 `json:"S12_010"` // 重複コード2012
+S12011 float64 `json:"S12_011"` // データ有無コード2012
+S12012 *string `json:"S12_012"` // 備考2012
+S12013 float64 `json:"S12_013"` // 乗降客数2012
 
-	S12014 float64 `json:"S12_014"` // 重複コード2013
-	S12015 float64 `json:"S12_015"` // データ有無コード2013
-	S12016 *string `json:"S12_016"` // 備考2013
-	S12017 float64 `json:"S12_017"` // 乗降客数2013
+S12014 float64 `json:"S12_014"` // 重複コード2013
+S12015 float64 `json:"S12_015"` // データ有無コード2013
+S12016 *string `json:"S12_016"` // 備考2013
+S12017 float64 `json:"S12_017"` // 乗降客数2013
 
-	S12018 float64 `json:"S12_018"` // 重複コード2014
-	S12019 float64 `json:"S12_019"` // データ有無コード2014
-	S12020 *string `json:"S12_020"` // 備考2014
-	S12021 float64 `json:"S12_021"` // 乗降客数2014
+S12018 float64 `json:"S12_018"` // 重複コード2014
+S12019 float64 `json:"S12_019"` // データ有無コード2014
+S12020 *string `json:"S12_020"` // 備考2014
+S12021 float64 `json:"S12_021"` // 乗降客数2014
 
-	S12022 float64 `json:"S12_022"` // 重複コード2015
-	S12023 float64 `json:"S12_023"` // データ有無コード2015
-	S12024 *string `json:"S12_024"` // 備考2015
-	S12025 float64 `json:"S12_025"` // 乗降客数2015
+S12022 float64 `json:"S12_022"` // 重複コード2015
+S12023 float64 `json:"S12_023"` // データ有無コード2015
+S12024 *string `json:"S12_024"` // 備考2015
+S12025 float64 `json:"S12_025"` // 乗降客数2015
 
-	S12026 float64 `json:"S12_026"` // 重複コード2016
-	S12027 float64 `json:"S12_027"` // データ有無コード2016
-	S12028 *string `json:"S12_028"` // 備考2016
-	S12029 float64 `json:"S12_029"` // 乗降客数2016
+S12026 float64 `json:"S12_026"` // 重複コード2016
+S12027 float64 `json:"S12_027"` // データ有無コード2016
+S12028 *string `json:"S12_028"` // 備考2016
+S12029 float64 `json:"S12_029"` // 乗降客数2016
 
-	S12030 float64 `json:"S12_030"` // 重複コード2017
-	S12031 float64 `json:"S12_031"` // データ有無コード2017
-	S12032 *string `json:"S12_032"` // 備考2017
-	S12033 float64 `json:"S12_033"` // 乗降客数2017
+S12030 float64 `json:"S12_030"` // 重複コード2017
+S12031 float64 `json:"S12_031"` // データ有無コード2017
+S12032 *string `json:"S12_032"` // 備考2017
+S12033 float64 `json:"S12_033"` // 乗降客数2017
 
-	S12034 float64 `json:"S12_034"` // 重複コード2018
-	S12035 float64 `json:"S12_035"` // データ有無コード2018
-	S12036 *string `json:"S12_036"` // 備考2018
-	S12037 float64 `json:"S12_037"` // 乗降客数2018
+S12034 float64 `json:"S12_034"` // 重複コード2018
+S12035 float64 `json:"S12_035"` // データ有無コード2018
+S12036 *string `json:"S12_036"` // 備考2018
+S12037 float64 `json:"S12_037"` // 乗降客数2018
 
-	S12038 float64 `json:"S12_038"` // 重複コード2019
-	S12039 float64 `json:"S12_039"` // データ有無コード2019
-	S12040 *string `json:"S12_040"` // 備考2019
-	S12041 float64 `json:"S12_041"` // 乗降客数2019
+S12038 float64 `json:"S12_038"` // 重複コード2019
+S12039 float64 `json:"S12_039"` // データ有無コード2019
+S12040 *string `json:"S12_040"` // 備考2019
+S12041 float64 `json:"S12_041"` // 乗降客数2019
 
-	S12042 float64 `json:"S12_042"` // 重複コード2020
-	S12043 float64 `json:"S12_043"` // データ有無コード2020
-	S12044 *string `json:"S12_044"` // 備考2020
-	S12045 float64 `json:"S12_045"` // 乗降客数2020
+S12042 float64 `json:"S12_042"` // 重複コード2020
+S12043 float64 `json:"S12_043"` // データ有無コード2020
+S12044 *string `json:"S12_044"` // 備考2020
+S12045 float64 `json:"S12_045"` // 乗降客数2020
 
-	S12046 float64 `json:"S12_046"` // 重複コード2021
-	S12047 float64 `json:"S12_047"` // データ有無コード2021
-	S12048 *string `json:"S12_048"` // 備考2021
-	S12049 float64 `json:"S12_049"` // 乗降客数2021
+S12046 float64 `json:"S12_046"` // 重複コード2021
+S12047 float64 `json:"S12_047"` // データ有無コード2021
+S12048 *string `json:"S12_048"` // 備考2021
+S12049 float64 `json:"S12_049"` // 乗降客数2021
 
-	S12050 float64 `json:"S12_050"` // 重複コード2022
-	S12051 float64 `json:"S12_051"` // データ有無コード2022
-	S12052 *string `json:"S12_052"` // 備考2022
-	S12053 float64 `json:"S12_053"` // 乗降客数2022
+S12050 float64 `json:"S12_050"` // 重複コード2022
+S12051 float64 `json:"S12_051"` // データ有無コード2022
+S12052 *string `json:"S12_052"` // 備考2022
+S12053 float64 `json:"S12_053"` // 乗降客数2022
 
-	S12054 float64 `json:"S12_054"` // 重複コード2023
-	S12055 float64 `json:"S12_055"` // データ有無コード2023
-	S12056 *string `json:"S12_056"` // 備考2023
-	S12057 float64 `json:"S12_057"` // 乗降客数2023
+S12054 float64 `json:"S12_054"` // 重複コード2023
+S12055 float64 `json:"S12_055"` // データ有無コード2023
+S12056 *string `json:"S12_056"` // 備考2023
+S12057 float64 `json:"S12_057"` // 乗降客数2023
 */
 
 //	passengersFC *giocaltype.GiotypePassengersFeatureCollectionから連想配列で乗降客数データを取得
-//引数で渡す S12001cで駅コードを参照し、GiotypePassengersPropの年度ごとの乗降客数データを数値:数値の連想配列で返す
-//フラグも確認する。S12001cが一致する駅コードのデータのみを取得する
+//
+// 引数で渡す S12001cで駅コードを参照し、GiotypePassengersPropの年度ごとの乗降客数データを数値:数値の連想配列で返す
+// フラグも確認する。S12001cが一致する駅コードのデータのみを取得する
 func getPassengersDataByCode(
 	passengersFC *giocaltype.GiotypePassengersFeatureCollection, stationCode string,
 ) map[int]float64 {
-	passengersData := make(map[int]float64)	
+	passengersData := make(map[int]float64)
 	for _, feature := range passengersFC.Features {
 		//駅コードが一致しない場合はスキップ
 		if feature.Properties.S12001c != stationCode {
@@ -483,7 +613,6 @@ func getPassengersDataByCode(
 	}
 	return passengersData
 }
-		
 
 func getPassengersDataByName(
 	passengersFC *giocaltype.GiotypePassengersFeatureCollection, stationName string,
@@ -510,7 +639,7 @@ func getPassengersDataByName(
 		}
 		if int(feature.Properties.S12023) == true_flag {
 			passengersData[2015] = feature.Properties.S12025
-		}		
+		}
 		if int(feature.Properties.S12027) == true_flag {
 			passengersData[2016] = feature.Properties.S12029
 		}
@@ -539,7 +668,7 @@ func getPassengersDataByName(
 	return passengersData
 }
 
-//そのエッジの開業年度を取得する関数
+// そのエッジの開業年度を取得する関数
 func getOpeningYear(
 	historyFC *giocaltype.GiotypeN05RailroadSectionFeatureCollection, company string, line string,
 ) int {
@@ -550,7 +679,7 @@ func getOpeningYear(
 		if feature.Properties.N05002 != line {
 			continue
 		}
-		return int(feature.Properties.N05004)	
+		return int(feature.Properties.N05004)
 	}
 	return 0 //見つからなかった場合は0を返す
 }
