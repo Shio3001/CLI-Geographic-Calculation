@@ -9,8 +9,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Shio3001/CLI-Geographic-Calculation/internal/giocal"
-	"github.com/Shio3001/CLI-Geographic-Calculation/internal/giocal/giocaltype"
+	"CLI-Geographic-Calculation/internal/giocal"
+	"CLI-Geographic-Calculation/internal/giocal/giocaltype"
+	giocal_load "CLI-Geographic-Calculation/internal/giocal/load"
 )
 
 //現在のミリ秒取得
@@ -56,34 +57,34 @@ func main() {
 		err          error
 	)
 
-	// ---- Read stations / sections with optional filters ----
+	// ---- Load stations / sections with optional filters ----
 	if len(targetLines) > 0 || targetCompany != "" {
-		stFC, err = giocal.ReadGiotypeStationForCompanyAndLines(*stationPath, targetCompany, targetLines)
+		stFC, err = giocal_load.LoadGiotypeStationForCompanyAndLines(*stationPath, targetCompany, targetLines)
 		if err != nil {
 			die(err)
 		}
 
-		rrFC, err = giocal.ReadGiotypeRailroadSectionForCompanyAndLines(*sectionPath, targetCompany, targetLines)
+		rrFC, err = giocal_load.LoadGiotypeRailroadSectionForCompanyAndLines(*sectionPath, targetCompany, targetLines)
 		if err != nil {
 			die(err)
 		}
 	} else {
-		stFC, err = giocal.ReadGiotypeStation(*stationPath)
+		stFC, err = giocal.LoadGiotypeStation(*stationPath)
 		if err != nil {
 			die(err)
 		}
 
-		rrFC, err = giocal.ReadGiotypeRailroadSection(*sectionPath)
+		rrFC, err = giocal.LoadGiotypeRailroadSection(*sectionPath)
 		if err != nil {
 			die(err)
 		}
 	}
 
-	passengersFC, err = giocal.ReadGiotypePassengersForCompanyAndLines(*passengersPath , targetCompany, targetLines)
+	passengersFC, err = giocal_load.LoadGiotypePassengersForCompanyAndLines(*passengersPath , targetCompany, targetLines)
 	if err != nil {
 		die(err)
 	}
-	historyFC, err = giocal.ReadGiotypeRailHistoryForCompanyAndLines(*history, targetCompany, targetLines)
+	historyFC, err = giocal_load.LoadGiotypeRailHistoryForCompanyAndLines(*history, targetCompany, targetLines)
 	if err != nil {
 		die(err)
 	}
