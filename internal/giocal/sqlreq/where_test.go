@@ -96,7 +96,7 @@ func TestParseWhereClause(t *testing.T) {
 	// 適当にdrsを出力 最初の10件だけ出力
 	t.Logf("Loaded DatasetResource: Rail.Features=%d, Station.Features=%d", len(drs.Rail.Features), len(drs.Station.Features))
 
-	ParseWhereClause(linefilter.FilterRailroadSectionByProperties, drs, whereClause, []int{})
+	ParseWhereClause(linefilter.FilterRailroadSectionByProperties, &drs.Rail.Features, whereClause, []int{})
 	// t.Logf("Filtered result count: %d", len(result))
 
 }

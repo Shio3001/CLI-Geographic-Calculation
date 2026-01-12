@@ -13,7 +13,7 @@ import (
 
 	spl_parser_test.go:57: bool_expr:{boolop:AND_EXPR args:{a_expr:{kind:AEXPR_OP name:{string:{sval:"="}} lexpr:{column_ref:{fields:{string:{sval:"company"}} location:25}} rexpr:{a_const:{sval:{sval:"東日本旅客鉄道"} location:35}} location:33}} args:{a_expr:{kind:AEXPR_IN name:{string:{sval:"="}} lexpr:{column_ref:{fields:{string:{sval:"line"}} location:63}} rexpr:{list:{items:{a_const:{sval:{sval:"山手線"} location:72}} items:{a_const:{sval:{sval:"中央線"} location:85}}}} location:68}} location:59}
 */
-func ParseWhereClause(filterFunc linefilter.FilterByProperties, drs *giocaltype.DatasetResource, whereClause *pg_query.Node, required []int) []int {
+func ParseWhereClause[T giocaltype.GiotypeFeatureConstraint](filterFunc linefilter.FilterByProperties[T], drsf *[]T, whereClause *pg_query.Node, required []int) []int {
 	// 要素が2つ以上ある場合
 	/**
 	var required1 []int
@@ -50,7 +50,7 @@ func ParseWhereClause(filterFunc linefilter.FilterByProperties, drs *giocaltype.
 		column, values, ok := ParseWhereExprIn(lexpr, rexpr)
 		print("[PWC/A_Expr] Column:", column, " Values:", printStringArray(values), "\n")
 		if ok {
-			req := filterFunc(&drs.Rail.Features, column, values)
+			req := filterFunc(drsf, column, values)
 			requireds = append(requireds, req)
 			print("[PWC/A_Expr] 要素追加:", printIntArray(req), "\n")
 		}
@@ -59,7 +59,7 @@ func ParseWhereClause(filterFunc linefilter.FilterByProperties, drs *giocaltype.
 		for _, arg := range whereClause.GetBoolExpr().GetArgs() {
 			if isExper(arg) {
 				print("[PWC/再帰] 子要素処理開始:", arg.String(), "\n")
-				req := ParseWhereClause(filterFunc, drs, arg, required)
+				req := ParseWhereClause(filterFunc, drsf, arg, required)
 				requireds = append(requireds, req)
 			}
 		}
@@ -80,10 +80,10 @@ func ParseWhereClause(filterFunc linefilter.FilterByProperties, drs *giocaltype.
 	result := requireds[0]
 	for i := 1; i < len(requireds); i++ {
 		if whereClause.GetBoolExpr().GetBoolop() == pg_query.BoolExprType_AND_EXPR {
-			result = WhereAnd(drs, result, requireds[i])
+			result = WhereAnd(result, requireds[i])
 			print("[PWC/AND] 結合結果:", printIntArray(result), "\n")
 		} else if whereClause.GetBoolExpr().GetBoolop() == pg_query.BoolExprType_OR_EXPR {
-			result = WhereOr(drs, result, requireds[i])
+			result = WhereOr(result, requireds[i])
 			print("[PWC/OR] 結合結果:", printIntArray(result), "\n")
 		}
 	}
@@ -162,7 +162,7 @@ func isAexpr(node *pg_query.Node) bool {
 type ParserNode func(drs *giocaltype.DatasetResource, required1 []int, required2 []int) []int
 
 // 必要な行数を返す
-func WhereAnd(drs *giocaltype.DatasetResource, required1 []int, required2 []int) []int {
+func WhereAnd(required1 []int, required2 []int) []int {
 
 	// required1とrequired2の共通部分を返す
 	result := make([]int, 0)
@@ -182,7 +182,7 @@ func WhereAnd(drs *giocaltype.DatasetResource, required1 []int, required2 []int)
 }
 
 // 必要な行数を返す
-func WhereOr(drs *giocaltype.DatasetResource, required1 []int, required2 []int) []int {
+func WhereOr(required1 []int, required2 []int) []int {
 	// required1とrequired2の和集合を返す
 	result := make([]int, 0)
 	m := make(map[int]bool)
