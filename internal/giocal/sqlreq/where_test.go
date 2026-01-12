@@ -3,6 +3,7 @@ package sqlreq
 import (
 	"CLI-Geographic-Calculation/internal/giocal"
 	"CLI-Geographic-Calculation/internal/giocal/giocaltype"
+	"CLI-Geographic-Calculation/internal/giocal/linefilter"
 	"CLI-Geographic-Calculation/internal/giocal/sqlreq/testutil"
 	"testing"
 )
@@ -87,14 +88,15 @@ func TestParseWhereClause(t *testing.T) {
 			"internal/giodata_public/N02-23_Station.json",
 		),
 	}
-	//LoadDatasetResourceで作成する
-	dummyDRS, error := giocal.LoadDatasetResource(drp)
-	if error != nil {
-		t.Fatalf("Failed to load DatasetResource: %v", error)
+
+	drs, err := giocal.LoadDatasetResource(drp)
+	if err != nil {
+		t.Fatal(err)
 	}
+	// 適当にdrsを出力 最初の10件だけ出力
+	t.Logf("Loaded DatasetResource: Rail.Features=%d, Station.Features=%d", len(drs.Rail.Features), len(drs.Station.Features))
 
-	resultIndices := ParseWhereClause(dummyDRS, whereClause, []int{})
+	ParseWhereClause(linefilter.FilterRailroadSectionByProperties, drs, whereClause, []int{})
+	// t.Logf("Filtered result count: %d", len(result))
 
-	// 結果のインデックスを表示
-	t.Logf("Result Indices: %v", resultIndices)
 }

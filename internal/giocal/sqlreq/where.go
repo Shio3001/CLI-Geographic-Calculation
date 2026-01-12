@@ -2,6 +2,8 @@ package sqlreq
 
 import (
 	"CLI-Geographic-Calculation/internal/giocal/giocaltype"
+	"CLI-Geographic-Calculation/internal/giocal/linefilter"
+	"fmt"
 
 	pg_query "github.com/pganalyze/pg_query_go/v6"
 )
@@ -11,7 +13,7 @@ import (
 
 	spl_parser_test.go:57: bool_expr:{boolop:AND_EXPR args:{a_expr:{kind:AEXPR_OP name:{string:{sval:"="}} lexpr:{column_ref:{fields:{string:{sval:"company"}} location:25}} rexpr:{a_const:{sval:{sval:"東日本旅客鉄道"} location:35}} location:33}} args:{a_expr:{kind:AEXPR_IN name:{string:{sval:"="}} lexpr:{column_ref:{fields:{string:{sval:"line"}} location:63}} rexpr:{list:{items:{a_const:{sval:{sval:"山手線"} location:72}} items:{a_const:{sval:{sval:"中央線"} location:85}}}} location:68}} location:59}
 */
-func ParseWhereClause(drs *giocaltype.DatasetResource, whereClause *pg_query.Node, required []int) []int {
+func ParseWhereClause(filterFunc linefilter.FilterByProperties, drs *giocaltype.DatasetResource, whereClause *pg_query.Node, required []int) []int {
 	// 要素が2つ以上ある場合
 	/**
 	var required1 []int
@@ -30,30 +32,71 @@ func ParseWhereClause(drs *giocaltype.DatasetResource, whereClause *pg_query.Nod
 		これを参考に
 	*/
 
-	var requireds [][]int
+	print("* * * [PWC/処理開始] WhereClause:", whereClause.String(), "\n")
 
-	// 子要素数
-	for _, arg := range whereClause.GetBoolExpr().Args {
-		if isAexpr(arg) {
-			req := ParseWhereClause(drs, arg, required)
+	if !isExper(whereClause) {
+		// A_Exprでない場合は処理しない
+		print("[PWC/終了] WhereClauseは式ではありません:", whereClause.String(), "\n")
+		return required
+	}
+
+	var requireds [][]int = [][]int{}
+
+	//子要素が2つの時
+	if whereClause.GetAExpr() != nil {
+		lexpr := whereClause.GetAExpr().GetLexpr()
+		rexpr := whereClause.GetAExpr().GetRexpr()
+
+		column, values, ok := ParseWhereExprIn(lexpr, rexpr)
+		print("[PWC/A_Expr] Column:", column, " Values:", printStringArray(values), "\n")
+		if ok {
+			req := filterFunc(&drs.Rail.Features, column, values)
 			requireds = append(requireds, req)
+			print("[PWC/A_Expr] 要素追加:", printIntArray(req), "\n")
+		}
+	} else {
+		// 子要素数
+		for _, arg := range whereClause.GetBoolExpr().GetArgs() {
+			if isExper(arg) {
+				print("[PWC/再帰] 子要素処理開始:", arg.String(), "\n")
+				req := ParseWhereClause(filterFunc, drs, arg, required)
+				requireds = append(requireds, req)
+			}
 		}
 	}
 
+	print("[PWC/結合前] 要素数:", len(requireds), " 要素一覧:")
+	for _, r := range requireds {
+		print(" ", printIntArray(r))
+	}
+	print("\n")
+
+	if len(requireds) == 0 {
+		return required
+	}
+
+	print("[PWC/結合開始] WhereClause:", whereClause.String(), "\n")
 	// 結合
-	result := required
-	switch whereClause.GetBoolExpr().Boolop {
-	case pg_query.BoolExprType_AND_EXPR:
-		for _, req := range requireds {
-			result = WhereAnd(drs, result, req)
-		}
-	case pg_query.BoolExprType_OR_EXPR:
-		for _, req := range requireds {
-			result = WhereOr(drs, result, req)
+	result := requireds[0]
+	for i := 1; i < len(requireds); i++ {
+		if whereClause.GetBoolExpr().GetBoolop() == pg_query.BoolExprType_AND_EXPR {
+			result = WhereAnd(drs, result, requireds[i])
+			print("[PWC/AND] 結合結果:", printIntArray(result), "\n")
+		} else if whereClause.GetBoolExpr().GetBoolop() == pg_query.BoolExprType_OR_EXPR {
+			result = WhereOr(drs, result, requireds[i])
+			print("[PWC/OR] 結合結果:", printIntArray(result), "\n")
 		}
 	}
-
+	print("[PWC/処理終了] WhereClause:", whereClause.String(), " 結果:", printIntArray(result), "\n")
 	return result
+}
+
+// string配列を出力するhelper
+func printStringArray(arr []string) string {
+	return fmt.Sprintf("%v", arr)
+}
+func printIntArray(arr []int) string {
+	return fmt.Sprintf("%v", arr)
 }
 
 /**
@@ -96,6 +139,17 @@ bool_expr  (boolop=OR_EXPR)
       └─ ival 2023  (location=110)
 
 */
+
+func isExper(node *pg_query.Node) bool {
+	return isAexpr(node) || isBoolExpr(node)
+}
+
+func isBoolExpr(node *pg_query.Node) bool {
+	if node.GetBoolExpr() != nil {
+		return true
+	}
+	return false
+}
 
 func isAexpr(node *pg_query.Node) bool {
 	if node.GetAExpr() != nil {
@@ -155,6 +209,13 @@ func WhereOr(drs *giocaltype.DatasetResource, required1 []int, required2 []int) 
   │  │  └  └─ ConstString("中央線") (location: 85)
 */
 
+/**
+BoolExprType_BOOL_EXPR_TYPE_UNDEFINED BoolExprType = 0
+BoolExprType_AND_EXPR                 BoolExprType = 1
+BoolExprType_OR_EXPR                  BoolExprType = 2
+BoolExprType_NOT_EXPR                 BoolExprType = 3
+*/
+
 func ParseWhereExprIn(
 	left *pg_query.Node,
 	right *pg_query.Node,
@@ -175,6 +236,14 @@ func ParseWhereExprIn(
 		return "", nil, false
 	}
 	column := colRef.Fields[0].GetString_().GetSval()
+
+	// 右辺が単一であれば、INではなく=の可能性もある
+	if c := right.GetAConst(); c != nil {
+		if sval := c.GetSval(); sval != nil {
+			return column, []string{sval.Sval}, true
+		}
+		return "", nil, false
+	}
 
 	// 右辺: IN (...) の List
 	list := right.GetList()
