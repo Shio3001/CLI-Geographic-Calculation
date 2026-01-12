@@ -57,9 +57,42 @@ func TestGetWhereClause(t *testing.T) {
 	t.Log(whereClause)
 }
 
+// whereが奥行きのある場合
+/***
+  spl_parser_test.go:65: bool_expr:{boolop:OR_EXPR args:{bool_expr:{boolop:AND_EXPR args:{a_expr:{kind:AEXPR_OP name:{string:{sval:"="}} lexpr:{column_ref:{fields:{string:{sval:"company"}} location:26}} rexpr:{a_const:{sval:{sval:"東日本旅客鉄道"} location:36}} location:34}} args:{a_expr:{kind:AEXPR_IN name:{string:{sval:"="}} lexpr:{column_ref:{fields:{string:{sval:"line"}} location:64}} rexpr:{list:{items:{a_const:{sval:{sval:"山手線"} location:73}} items:{a_const:{sval:{sval:"中央線"} location:86}}}} location:69}} location:60}} args:{a_expr:{kind:AEXPR_OP name:{string:{sval:"="}} lexpr:{column_ref:{fields:{string:{sval:"year"}} location:103}} rexpr:{a_const:{ival:{ival:2023} location:110}} location:108}} location:100}
+*/
+/**
+bool_expr  (boolop=OR_EXPR)
+├─ args[0]: bool_expr (boolop=AND_EXPR)
+│  ├─ args[0]: a_expr (kind=AEXPR_OP, op="=")
+│  │  ├─ lexpr: column_ref
+│  │  │  └─ fields[0]: string "company"  (location=26)
+│  │  └─ rexpr: a_const (string)
+│  │     └─ sval "東日本旅客鉄道"  (location=36)
+│  └─ args[1]: a_expr (kind=AEXPR_IN)
+│     ├─ lexpr: column_ref
+│     │  └─ fields[0]: string "line"  (location=64)
+│     └─ rexpr: list  (location=69)
+│        ├─ items[0]: a_const (string) sval "山手線"  (location=73)
+│        └─ items[1]: a_const (string) sval "中央線"  (location=86)
+└─ args[1]: a_expr (kind=AEXPR_OP, op="=")  (location=100)
+   ├─ lexpr: column_ref
+   │  └─ fields[0]: string "year"  (location=103)
+   └─ rexpr: a_const (int)
+      └─ ival 2023  (location=110)
+
+*/
+func TestGetWhereClauseDeep(t *testing.T) {
+	query := "SELECT * FROM rail WHERE (company = '東日本旅客鉄道' AND line IN ('山手線', '中央線')) OR year = 2023"
+	parsed := ParseSQLQuery(query)
+	firstStmt := GetFirstStmt(parsed)
+	whereClause := GetWhereClause(firstStmt)
+	t.Log(whereClause)
+}
+
 // groupBy句の解析
 /**
-    spl_parser_test.go:66: select_stmt:{target_list:{res_target:{val:{column_ref:{fields:{string:{sval:"line"}}  location:7}}  location:7}}  target_list:{res_target:{val:{func_call:{funcname:{string:{sval:"count"}}  agg_star:true  funcformat:COERCE_EXPLICIT_CALL  location:13}}  location:13}}  from_clause:{range_var:{relname:"rail"  inh:true  relpersistence:"p"  location:27}}  where_clause:{a_expr:{kind:AEXPR_OP  name:{string:{sval:"="}}  lexpr:{column_ref:{fields:{string:{sval:"company"}}  location:38}}  rexpr:{a_const:{sval:{sval:"東日本旅客鉄道"}  location:48}}  location:46}}  group_clause:{column_ref:{fields:{string:{sval:"line"}}  location:81}}  limit_option:LIMIT_OPTION_DEFAULT  op:SETOP_NONE}
+  spl_parser_test.go:66: select_stmt:{target_list:{res_target:{val:{column_ref:{fields:{string:{sval:"line"}}  location:7}}  location:7}}  target_list:{res_target:{val:{func_call:{funcname:{string:{sval:"count"}}  agg_star:true  funcformat:COERCE_EXPLICIT_CALL  location:13}}  location:13}}  from_clause:{range_var:{relname:"rail"  inh:true  relpersistence:"p"  location:27}}  where_clause:{a_expr:{kind:AEXPR_OP  name:{string:{sval:"="}}  lexpr:{column_ref:{fields:{string:{sval:"company"}}  location:38}}  rexpr:{a_const:{sval:{sval:"東日本旅客鉄道"}  location:48}}  location:46}}  group_clause:{column_ref:{fields:{string:{sval:"line"}}  location:81}}  limit_option:LIMIT_OPTION_DEFAULT  op:SETOP_NONE}
 */
 func TestGetGroupByClause(t *testing.T) {
 	query := "SELECT line, COUNT(*) FROM rail WHERE company = '東日本旅客鉄道' GROUP BY line"
