@@ -1,5 +1,6 @@
 // N02-23_RailloadSection.geojson の型情報
 package giocaltype
+
 // 属性名
 // （かっこ内はshp属性名）	説明	属性の型
 // 鉄道区分

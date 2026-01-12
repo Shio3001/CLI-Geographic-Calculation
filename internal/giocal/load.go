@@ -9,7 +9,6 @@ import (
 	"os"
 )
 
-
 func LoadDatasetResource(path giocaltype.DatasetResourcePath) (*giocaltype.DatasetResource, error) {
 	railFC, err := LoadGiotypeRailroadSection(path.Rail)
 	if err != nil {
@@ -17,10 +16,10 @@ func LoadDatasetResource(path giocaltype.DatasetResourcePath) (*giocaltype.Datas
 	}
 	stationFC, err := LoadGiotypeStation(path.Station)
 	if err != nil {
-		return nil,  err
+		return nil, err
 	}
 	return &giocaltype.DatasetResource{
-		Rail: railFC,
+		Rail:    railFC,
 		Station: stationFC,
 	}, nil
 }
@@ -73,8 +72,7 @@ func LoadGiotypePassengers(filePath string) (*giocaltype.GiotypePassengersFeatur
 	return &fc, nil
 }
 
-
-//loadGeoJSONFile は指定されたファイルパスからGeoJSONデータを読み込むヘルパー関数
+// loadGeoJSONFile は指定されたファイルパスからGeoJSONデータを読み込むヘルパー関数
 func LoadGeoJSONFile(filePath string) ([]byte, error) {
 	data, err := os.ReadFile(filePath)
 	if err != nil {
@@ -102,7 +100,7 @@ func LoadGiotypeStationForLines(filePath string, targetLines []string) (*giocalt
 	fc.Features = filteredFeatures
 
 	return fc, nil
-}	
+}
 
 // 開業年度
 
@@ -121,6 +119,4 @@ func LoadGiotypeRailHistory(filePath string) (*giocaltype.GiotypeN05RailroadSect
 	return &fc, nil
 }
 
-
-// 
-
+//

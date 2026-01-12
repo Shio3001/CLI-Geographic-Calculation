@@ -33,7 +33,6 @@ func TestParseSQLQuery4(t *testing.T) {
 	t.Log(result)
 }
 
-
 func TestGetFirstStmt(t *testing.T) {
 	query := "SELECT * FROM rail WHERE company = '東日本旅客鉄道' AND line IN ('山手線', '中央線')"
 	parsed := ParseSQLQuery(query)
@@ -108,14 +107,13 @@ func TestGetGroupByClause(t *testing.T) {
 func TestGetGroupByClauseMultiple(t *testing.T) {
 	query := "SELECT company, line, COUNT(*) FROM rail WHERE year = 2023 GROUP BY company, line"
 	parsed := ParseSQLQuery(query)
-	
+
 	firstStmt := GetFirstStmt(parsed)
 	groupByClauses := GetGroupByClauses(firstStmt)
 	for _, clause := range groupByClauses {
 		t.Log(clause)
 	}
 }
-
 
 /**
 version: 170004
