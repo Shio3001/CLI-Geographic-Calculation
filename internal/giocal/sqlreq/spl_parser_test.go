@@ -1,6 +1,12 @@
 package sqlreq
 
-import "testing"
+import (
+	"CLI-Geographic-Calculation/internal/giocal"
+	"CLI-Geographic-Calculation/internal/giocal/giocaltype"
+	"CLI-Geographic-Calculation/internal/giocal/linefilter"
+	"CLI-Geographic-Calculation/internal/giocal/sqlreq/testutil"
+	"testing"
+)
 
 func TestParseSQLQuery1(t *testing.T) {
 	query := "SELECT * FROM rail WHERE year = 2023"
@@ -197,4 +203,43 @@ func TestGetGroupByClauseMultipleCount(t *testing.T) {
 	for _, clause := range groupByClauses {
 		t.Log(clause)
 	}
+}
+
+// SQLToGraphのテスト
+func TestSQLToGraph(t *testing.T) {
+	query := "SELECT * FROM rail WHERE company = '東日本旅客鉄道' AND line IN ('山手線', '中央線')"
+	parsed := ParseSQLQuery(query)
+	drp := giocaltype.DatasetResourcePath{
+		Rail: testutil.ProjectRootPath(
+			"internal/giodata_public/N02-23_RailroadSection.json",
+		),
+		Station: testutil.ProjectRootPath(
+			"internal/giodata_public/N02-23_Station.json",
+		),
+	}
+
+	drs, _ := giocal.LoadDatasetResource(drp)
+	graph := SQLToGraph(linefilter.FilterRailroadSectionByProperties, parsed, drs)
+	t.Log("Graph: ")
+	testutil.OutputGraph(graph, "test_output_graph_east.json")
+
+}
+
+// SQLToGraphのテスト
+func TestSQLToGraphTokai(t *testing.T) {
+	query := "SELECT * FROM rail WHERE company IN ('東日本旅客鉄道' , '東海旅客鉄道') AND line IN ('山手線', '中央線')"
+	parsed := ParseSQLQuery(query)
+	drp := giocaltype.DatasetResourcePath{
+		Rail: testutil.ProjectRootPath(
+			"internal/giodata_public/N02-23_RailroadSection.json",
+		),
+		Station: testutil.ProjectRootPath(
+			"internal/giodata_public/N02-23_Station.json",
+		),
+	}
+
+	drs, _ := giocal.LoadDatasetResource(drp)
+	graph := SQLToGraph(linefilter.FilterRailroadSectionByProperties, parsed, drs)
+	t.Log("Graph: ")
+	testutil.OutputGraph(graph, "test_output_graph_tokai.json")
 }
