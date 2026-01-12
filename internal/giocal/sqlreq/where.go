@@ -11,25 +11,49 @@ import (
 
 	spl_parser_test.go:57: bool_expr:{boolop:AND_EXPR args:{a_expr:{kind:AEXPR_OP name:{string:{sval:"="}} lexpr:{column_ref:{fields:{string:{sval:"company"}} location:25}} rexpr:{a_const:{sval:{sval:"東日本旅客鉄道"} location:35}} location:33}} args:{a_expr:{kind:AEXPR_IN name:{string:{sval:"="}} lexpr:{column_ref:{fields:{string:{sval:"line"}} location:63}} rexpr:{list:{items:{a_const:{sval:{sval:"山手線"} location:72}} items:{a_const:{sval:{sval:"中央線"} location:85}}}} location:68}} location:59}
 */
-func ParseWhereClause(drs *giocaltype.DatasetResource, whereClause *pg_query.Node) {
-	// AND条件
-	if whereClause.GetBoolExpr() != nil && whereClause.GetBoolExpr().GetBoolop() == pg_query.BoolExprType_AND_EXPR {
-		args := whereClause.GetBoolExpr().GetArgs()
-		if len(args) != 2 {
-			return
-		}
+func ParseWhereClause(drs *giocaltype.DatasetResource, whereClause *pg_query.Node, required []int) []int {
+	// 要素が2つ以上ある場合
+	/**
+	var required1 []int
+	if isAexpr(left) {
+		required1 = ParseWhereClause(drs, left, required)
+	} else {
+		required1 = []int{}
+	}
 
-		left := args[0]
-		right := args[1]
+	var required2 []int
+	if isAexpr(right) {
+		required2 = ParseWhereClause(drs, right, required)
+	} else {
+		required2 = []int{}
+	}
+		これを参考に
+	*/
 
-		// 左辺: company = '東日本旅客鉄道'
-		if isAexpr(left) {
-		}
+	var requireds [][]int
 
-		// 右辺: line IN ('山手線', '中央線')
-		if isAexpr(right) {
+	// 子要素数
+	for _, arg := range whereClause.GetBoolExpr().Args {
+		if isAexpr(arg) {
+			req := ParseWhereClause(drs, arg, required)
+			requireds = append(requireds, req)
 		}
 	}
+
+	// 結合
+	result := required
+	switch whereClause.GetBoolExpr().Boolop {
+	case pg_query.BoolExprType_AND_EXPR:
+		for _, req := range requireds {
+			result = WhereAnd(drs, result, req)
+		}
+	case pg_query.BoolExprType_OR_EXPR:
+		for _, req := range requireds {
+			result = WhereOr(drs, result, req)
+		}
+	}
+
+	return result
 }
 
 /**
