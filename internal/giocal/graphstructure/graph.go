@@ -13,8 +13,8 @@ type Node struct {
 	Kind string // "station" | "coord" | ...
 	Name string // station名など（coordは空でもOK）
 
-	Lon float64
-	Lat float64
+	Lon float64 // 経度
+	Lat float64 // 緯度
 
 	// 任意のメタデータ（駅コード/会社/路線など）
 	Meta map[string]string
@@ -23,12 +23,11 @@ type Node struct {
 	Passengers map[int]float64
 }
 
-
 type Edge struct {
 	From string
 	To   string
 
-	Kind string  // "rail" | "station_at" | ...
+	Kind string // "rail" | "station_at" | ...
 	// 平面近似距離(km)やコストなど
 	WeightKm float64
 
