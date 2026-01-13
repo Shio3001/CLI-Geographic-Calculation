@@ -2,7 +2,9 @@ package handler
 
 import (
 	"CLI-Geographic-Calculation/pkg/dataResolve"
+	"CLI-Geographic-Calculation/pkg/giocal"
 	"CLI-Geographic-Calculation/pkg/giocal/giocaltype"
+	"CLI-Geographic-Calculation/pkg/giocal/linefilter"
 	"CLI-Geographic-Calculation/pkg/giocal/sqlreq"
 	"encoding/json"
 	"errors"
@@ -12,6 +14,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	pg_query "github.com/pganalyze/pg_query_go/v6"
 )
 
 type routeKey struct {
@@ -95,7 +99,6 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// ここは本来 parsed を渡す（panicするなら要注意）
 	parsed := sqlreq.ParseSQLQuery(query)
 
 	ds.Handler(w, year, resolved, parsed, query)
@@ -128,11 +131,30 @@ func resolveResources(r giocaltype.DatasetResourcePath) (giocaltype.DatasetResou
 	}, nil
 }
 
-type datasetHandler func(w http.ResponseWriter, year int, res giocaltype.DatasetResourcePath, parsed any, rawSQL string)
+type datasetHandler func(w http.ResponseWriter, year int, res giocaltype.DatasetResourcePath, parsed *pg_query.ParseResult, rawSQL string)
 
-func handleRail(w http.ResponseWriter, year int, res giocaltype.DatasetResourcePath, parsed any, rawSQL string) {
-	println("[HANDLE RAIL] Year:", year, "Rail Resource:", res.Rail)
+func handleRail(
+	w http.ResponseWriter,
+	year int,
+	res giocaltype.DatasetResourcePath,
+	parsed *pg_query.ParseResult,
+	rawSQL string,
+) {
+	// 1) データセット読み込み
+	drs, err := giocal.LoadDatasetResource(res)
+	if err != nil {
+		http.Error(w, "Failed to load DatasetResource: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
 
+	// 2) SQL -> Graph
+	graph := sqlreq.SQLToGraph(
+		linefilter.FilterRailroadSectionByProperties,
+		parsed,
+		drs,
+	)
+
+	// 3) 返却
 	out := map[string]any{
 		"ok":       true,
 		"year":     year,
@@ -142,9 +164,9 @@ func handleRail(w http.ResponseWriter, year int, res giocaltype.DatasetResourceP
 			"rail":    res.Rail,
 			"station": res.Station,
 		},
+		"graph": graph,
 	}
 
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	_ = json.NewEncoder(w).Encode(out)
-
 }
