@@ -4,9 +4,10 @@
 package giocal_load
 
 import (
-	"CLI-Geographic-Calculation/internal/giocal"
-	"CLI-Geographic-Calculation/internal/giocal/giocaltype"
+	"CLI-Geographic-Calculation/pkg/giocal"
+	"CLI-Geographic-Calculation/pkg/giocal/giocaltype"
 )
+
 func LoadGiotypeRailroadSectionForCompanyOrLines(filePath string, company string, targetLines []string) (*giocaltype.GiotypeRailroadSectionFeatureCollection, error) {
 	fc, err := giocal.LoadGiotypeRailroadSection(filePath)
 	if err != nil {
@@ -35,7 +36,7 @@ func LoadGiotypeRailroadSectionForCompanyOrLines(filePath string, company string
 	return fc, nil
 }
 
-func LoadGiotypeStationForCompanyOrLines(filePath string, company string, targetLines []string) (*giocaltype.GiotypeStationFeatureCollection, error)	 {
+func LoadGiotypeStationForCompanyOrLines(filePath string, company string, targetLines []string) (*giocaltype.GiotypeStationFeatureCollection, error) {
 	fc, err := giocal.LoadGiotypeStation(filePath)
 	if err != nil {
 		return nil, err
@@ -50,7 +51,7 @@ func LoadGiotypeStationForCompanyOrLines(filePath string, company string, target
 		}
 		if len(targetLines) == 0 {
 			continue
-		}	
+		}
 		for _, line := range targetLines {
 			if feature.Properties.N02003 == line {
 				filteredFeatures = append(filteredFeatures, feature)
@@ -63,7 +64,7 @@ func LoadGiotypeStationForCompanyOrLines(filePath string, company string, target
 	return fc, nil
 }
 
-func LoadGiotypePassengersForCompanyOrLines(filePath string, company string, targetLines []string) (*giocaltype.GiotypePassengersFeatureCollection, error)	 {
+func LoadGiotypePassengersForCompanyOrLines(filePath string, company string, targetLines []string) (*giocaltype.GiotypePassengersFeatureCollection, error) {
 	fc, err := giocal.LoadGiotypePassengers(filePath)
 	if err != nil {
 		return nil, err
@@ -78,7 +79,7 @@ func LoadGiotypePassengersForCompanyOrLines(filePath string, company string, tar
 		}
 		if len(targetLines) == 0 {
 			continue
-		}	
+		}
 		for _, line := range targetLines {
 			if feature.Properties.S12003 == line {
 				filteredFeatures = append(filteredFeatures, feature)

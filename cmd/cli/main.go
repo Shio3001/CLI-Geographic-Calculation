@@ -9,9 +9,9 @@ import (
 	"strings"
 	"time"
 
-	"CLI-Geographic-Calculation/internal/giocal"
-	"CLI-Geographic-Calculation/internal/giocal/giocaltype"
-	giocal_load "CLI-Geographic-Calculation/internal/giocal/load"
+	"CLI-Geographic-Calculation/pkg/giocal"
+	"CLI-Geographic-Calculation/pkg/giocal/giocaltype"
+	giocal_load "CLI-Geographic-Calculation/pkg/giocal/load"
 )
 
 // 現在のミリ秒取得

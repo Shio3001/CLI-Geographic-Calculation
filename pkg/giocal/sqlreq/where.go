@@ -1,8 +1,8 @@
 package sqlreq
 
 import (
-	"CLI-Geographic-Calculation/internal/giocal/giocaltype"
-	"CLI-Geographic-Calculation/internal/giocal/linefilter"
+	"CLI-Geographic-Calculation/pkg/giocal/giocaltype"
+	"CLI-Geographic-Calculation/pkg/giocal/linefilter"
 	"fmt"
 
 	pg_query "github.com/pganalyze/pg_query_go/v6"

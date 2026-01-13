@@ -1,10 +1,10 @@
 package sqlreq
 
 import (
-	"CLI-Geographic-Calculation/internal/giocal"
-	"CLI-Geographic-Calculation/internal/giocal/giocaltype"
-	"CLI-Geographic-Calculation/internal/giocal/linefilter"
-	"CLI-Geographic-Calculation/internal/giocal/sqlreq/testutil"
+	"CLI-Geographic-Calculation/pkg/giocal"
+	"CLI-Geographic-Calculation/pkg/giocal/giocaltype"
+	"CLI-Geographic-Calculation/pkg/giocal/linefilter"
+	"CLI-Geographic-Calculation/pkg/giocal/sqlreq/testutil"
 	"testing"
 )
 
@@ -211,10 +211,10 @@ func TestSQLToGraph(t *testing.T) {
 	parsed := ParseSQLQuery(query)
 	drp := giocaltype.DatasetResourcePath{
 		Rail: testutil.ProjectRootPath(
-			"internal/giodata_public/N02-23_RailroadSection.json",
+			"pkg/giodata_public/N02-23_RailroadSection.json",
 		),
 		Station: testutil.ProjectRootPath(
-			"internal/giodata_public/N02-23_Station.json",
+			"pkg/giodata_public/N02-23_Station.json",
 		),
 	}
 
@@ -231,10 +231,10 @@ func TestSQLToGraphTokai(t *testing.T) {
 	parsed := ParseSQLQuery(query)
 	drp := giocaltype.DatasetResourcePath{
 		Rail: testutil.ProjectRootPath(
-			"internal/giodata_public/N02-23_RailroadSection.json",
+			"pkg/giodata_public/N02-23_RailroadSection.json",
 		),
 		Station: testutil.ProjectRootPath(
-			"internal/giodata_public/N02-23_Station.json",
+			"pkg/giodata_public/N02-23_Station.json",
 		),
 	}
 

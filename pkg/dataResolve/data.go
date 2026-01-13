@@ -1,7 +1,7 @@
 package dataResolve
 
 import (
-	"CLI-Geographic-Calculation/internal/giocal/giocaltype"
+	"CLI-Geographic-Calculation/pkg/giocal/giocaltype"
 	"fmt"
 	"io"
 	"net/http"

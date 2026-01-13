@@ -1,8 +1,8 @@
 package giocal_load
 
 import (
-	"CLI-Geographic-Calculation/internal/giocal"
-	"CLI-Geographic-Calculation/internal/giocal/giocaltype"
+	"CLI-Geographic-Calculation/pkg/giocal"
+	"CLI-Geographic-Calculation/pkg/giocal/giocaltype"
 )
 
 // それぞれ、鉄道会社と、対象路線を複数指定して読み込む関数(AND条件)
@@ -35,7 +35,7 @@ func LoadGiotypeRailroadSectionForCompanyAndLines(filePath string, company strin
 	return fc, nil
 }
 
-func LoadGiotypeStationForCompanyAndLines(filePath string, company string, targetLines []string) (*giocaltype.GiotypeStationFeatureCollection, error)	 {
+func LoadGiotypeStationForCompanyAndLines(filePath string, company string, targetLines []string) (*giocaltype.GiotypeStationFeatureCollection, error) {
 	fc, err := giocal.LoadGiotypeStation(filePath)
 	if err != nil {
 		return nil, err
@@ -61,9 +61,9 @@ func LoadGiotypeStationForCompanyAndLines(filePath string, company string, targe
 	fc.Features = filteredFeatures
 
 	return fc, nil
-}	
+}
 
-//乗降客数データの読み込み関数
+// 乗降客数データの読み込み関数
 func LoadGiotypePassengersForCompanyAndLines(filePath string, company string, targetLines []string) (*giocaltype.GiotypePassengersFeatureCollection, error) {
 	fc, err := giocal.LoadGiotypePassengers(filePath)
 	if err != nil {
@@ -73,7 +73,6 @@ func LoadGiotypePassengersForCompanyAndLines(filePath string, company string, ta
 	// 鉄道会社と対象路線でフィルタリング
 	//GiotypePassengersFeatureCollectionで返す必要があるが、
 
-	
 	var filteredFeatures []giocaltype.GiotypePassengersFeature
 	for _, feature := range fc.Features {
 		if feature.Properties.S12002 != company {
@@ -94,8 +93,6 @@ func LoadGiotypePassengersForCompanyAndLines(filePath string, company string, ta
 
 	return fc, nil
 }
-
-
 
 func LoadGiotypeRailHistoryForCompanyAndLines(filePath string, company string, targetLines []string) (*giocaltype.GiotypeN05RailroadSectionFeatureCollection, error) {
 	fc, err := giocal.LoadGiotypeRailHistory(filePath)

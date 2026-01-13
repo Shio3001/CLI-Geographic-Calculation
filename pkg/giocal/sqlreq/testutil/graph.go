@@ -1,7 +1,7 @@
 package testutil
 
 import (
-	"CLI-Geographic-Calculation/internal/giocal/graphstructure"
+	"CLI-Geographic-Calculation/pkg/giocal/graphstructure"
 	"encoding/json"
 	"os"
 )

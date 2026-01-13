@@ -5,8 +5,8 @@
 package main
 
 import (
-	"CLI-Geographic-Calculation/internal/giocal/giocaltype"
-	"CLI-Geographic-Calculation/internal/giocal/sqlreq"
+	"CLI-Geographic-Calculation/pkg/giocal/giocaltype"
+	"CLI-Geographic-Calculation/pkg/giocal/sqlreq"
 	"net/http"
 	"strconv"
 	"strings"
@@ -36,8 +36,8 @@ var datasets = map[routeKey]Dataset{
 	{year: 2023, Resource: "rail"}: {
 		Handler: handleRail,
 		// DevResources: giocaltype.DatasetResourcePath{
-		// 	Rail:    "internal/giodata_public/N02-23_RailroadSection.json",
-		// 	Station: "internal/giodata_public/N02-23Station.json",
+		// 	Rail:    "pkg/giodata_public/N02-23_RailroadSection.json",
+		// 	Station: "pkg/giodata_public/N02-23Station.json",
 		// },
 		// ProdResources: giocaltype.DatasetResourcePath{
 		// 	Rail:    "https://github.com/Shio3001/giojson/blob/main/N02-23_RailroadSection.json",
