@@ -1,27 +1,17 @@
-//get requestを受信SQL文を受け取る
-//SQL Likeな文でgeojsonのデータを整理できるようにする
-//url routing は
-
-package main
+package api
 
 import (
+	"CLI-Geographic-Calculation/internal/dataResolve"
 	"CLI-Geographic-Calculation/internal/giocal/giocaltype"
 	"CLI-Geographic-Calculation/internal/giocal/sqlreq"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 )
 
-// 連想配列でルーティングを定義するが、下記のようなパスを想定
-// 2023/rail/クエリパラメータ
-// 2024/station/クエリパラメータ
-// クエリパラメータはSQ文でgeojsonのデータを整理できるようにする
-// 例: /2023/rail?query=SELECT * FROM rails WHERE length > 1000
-// 例: /2024/station?query=SELECT * FROM stations WHERE city = 'Tokyo'
-// 解析するSQL Likeな文は通常のSQL文に近い形で実装する
-
-// ルーティング用のキー
-// routeKeyの年は、データセット内における年次データを用いるとき、どの年度を使うかを指定するためのもの
 type routeKey struct {
 	year     int
 	Resource string
@@ -51,13 +41,7 @@ var datasets = map[routeKey]Dataset{
 	},
 }
 
-func main() {
-	println("[HTTP] GIOCAL")
-	http.HandleFunc("/", handler)
-	http.ListenAndServe(":8080", nil)
-}
-
-func handler(w http.ResponseWriter, r *http.Request) {
+func Handler(w http.ResponseWriter, r *http.Request) {
 	println("[HANDLER] : ", r.URL.Path)
 	// "/rail/2023/" → ["rail", "2023"]
 	path := strings.Trim(r.URL.Path, "/")
@@ -93,20 +77,53 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// ルーティングマップからハンドラを取得
-	handler, ok := datasets[key]
+	ds, ok := datasets[key]
 	if !ok {
 		http.Error(w, "resource not found", http.StatusNotFound)
+		return
+	}
+
+	resolved, err := resolveResources(ds.Resources)
+	if err != nil {
+		http.Error(w, "failed to resolve dataset resources: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	sqlreq.ParseSQLQuery(query)
 
 	// ハンドラを呼び出す（ここでは単純にレスポンスを書き込む例）
-	handler.Handler(handler.Resources, year)
+	ds.Handler(resolved, year)
 
 	w.Write([]byte(
 		"year=" + strconv.Itoa(year) + ", resource=" + key.Resource,
 	))
+}
+
+func resolveResources(r giocaltype.DatasetResourcePath) (giocaltype.DatasetResourcePath, error) {
+	env := strings.ToLower(os.Getenv("APP_ENV"))
+	if env == "" {
+		env = "dev"
+	}
+
+	if env == "prod" {
+		cacheDir := filepath.Join(os.TempDir(), "gio-cache")
+
+		p := dataResolve.BlobURLProvider{
+			CacheDir: cacheDir,
+			Client:   &http.Client{Timeout: 20 * time.Second},
+		}
+		return p.Resolve(r)
+	}
+
+	// dev: ローカル baseDir を付けるだけ
+	base := os.Getenv("GIO_LOCAL_BASE")
+	if base == "" {
+		base = "internal/giodata_public"
+	}
+	return giocaltype.DatasetResourcePath{
+		Rail:    filepath.Join(base, r.Rail),
+		Station: filepath.Join(base, r.Station),
+	}, nil
 }
 
 type datasetHandler func(datasetResource giocaltype.DatasetResourcePath, year int)
