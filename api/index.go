@@ -6,6 +6,7 @@ import (
 	"CLI-Geographic-Calculation/pkg/giocal/giocaltype"
 	"CLI-Geographic-Calculation/pkg/giocal/linefilter"
 	"CLI-Geographic-Calculation/pkg/giocal/sqlreq"
+	"CLI-Geographic-Calculation/pkg/render/graphsvg"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -41,26 +42,34 @@ var datasets = map[routeKey]Dataset{
 		// },
 
 		Resources: giocaltype.DatasetResourcePath{
-			Rail:    "https://t4rttlmu64pagxmi.public.blob.vercel-storage.com/N02-23_RailroadSection.json",
-			Station: "https://t4rttlmu64pagxmi.public.blob.vercel-storage.com/N02-23_Station.json",
+			Rail:    "N02-23_RailroadSection.json",
+			Station: "N02-23_Station.json",
 		},
 	},
 }
 
-func parseYearResource(path string) (int, string, error) {
+func parseYearResourceFormat(path string) (year int, resource string, format string, err error) {
 	p := strings.Trim(path, "/")
 	parts := strings.Split(p, "/")
-	if len(parts) != 2 {
-		return 0, "", errBadPath
+
+	if len(parts) != 2 && len(parts) != 3 {
+		return 0, "", "", errBadPath
 	}
-	year, err := strconv.Atoi(parts[0])
+
+	year, err = strconv.Atoi(parts[0])
 	if err != nil {
-		return 0, "", err
+		return 0, "", "", err
 	}
-	return year, parts[1], nil
+	resource = parts[1]
+
+	format = "json"
+	if len(parts) == 3 && parts[2] != "" {
+		format = strings.ToLower(parts[2])
+	}
+	return year, resource, format, nil
 }
 
-var errBadPath = errors.New("path must be {year}/{resource}")
+var errBadPath = errors.New("path must be {year}/{resource} or {year}/{resource}/{format}")
 
 func Handler(w http.ResponseWriter, r *http.Request) {
 	println("[HANDLER] urlPath:", r.URL.Path, "pathQuery:", r.URL.Query().Get("path"))
@@ -70,7 +79,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 		p = strings.TrimPrefix(r.URL.Path, "/api/")
 	}
 
-	year, resource, err := parseYearResource(p)
+	year, resource, format, err := parseYearResourceFormat(p)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -98,10 +107,9 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "failed to resolve dataset resources: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
-
 	parsed := sqlreq.ParseSQLQuery(query)
 
-	ds.Handler(w, year, resolved, parsed, query)
+	ds.Handler(w, year, resolved, parsed, query, format)
 }
 
 func resolveResources(r giocaltype.DatasetResourcePath) (giocaltype.DatasetResourcePath, error) {
@@ -131,7 +139,7 @@ func resolveResources(r giocaltype.DatasetResourcePath) (giocaltype.DatasetResou
 	}, nil
 }
 
-type datasetHandler func(w http.ResponseWriter, year int, res giocaltype.DatasetResourcePath, parsed *pg_query.ParseResult, rawSQL string)
+type datasetHandler func(w http.ResponseWriter, year int, res giocaltype.DatasetResourcePath, parsed *pg_query.ParseResult, rawSQL string, format string)
 
 func handleRail(
 	w http.ResponseWriter,
@@ -139,6 +147,7 @@ func handleRail(
 	res giocaltype.DatasetResourcePath,
 	parsed *pg_query.ParseResult,
 	rawSQL string,
+	format string,
 ) {
 	// 1) データセット読み込み
 	drs, err := giocal.LoadDatasetResource(res)
@@ -153,8 +162,32 @@ func handleRail(
 		parsed,
 		drs,
 	)
+	switch format {
+	case "svg":
+		svg, err := graphsvg.RenderRailGraphSVG(graph, graphsvg.Options{
+			Width:        1200,
+			Height:       800,
+			Padding:      20,
+			DrawStations: true,
+			DrawLabels:   true,
+		})
+		if err != nil {
+			http.Error(w, "failed to render svg: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
 
-	// 3) 返却
+		w.Header().Set("Content-Type", "image/svg+xml; charset=utf-8")
+		_, _ = w.Write([]byte(svg))
+		return
+
+	case "json", "":
+		// fallthrough
+	default:
+		http.Error(w, "unsupported format: "+format, http.StatusBadRequest)
+		return
+	}
+
+	// JSON 返却
 	out := map[string]any{
 		"ok":       true,
 		"year":     year,
