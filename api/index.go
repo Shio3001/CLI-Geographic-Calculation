@@ -75,13 +75,6 @@ var errBadPath = errors.New("path must be /api/{year}/{resource} or /{year}/{res
 
 func Handler(w http.ResponseWriter, r *http.Request) {
 	println("[HANDLER] : ", r.URL.Path)
-	// "/rail/2023/" → ["rail", "2023"]
-	path := strings.Trim(r.URL.Path, "/")
-	parts := strings.Split(path, "/")
-	if len(parts) != 2 {
-		http.Error(w, "path must be /{year}/{resource}", http.StatusBadRequest)
-		return
-	}
 
 	year, resource, err := parseYearResource(r.URL.Path)
 	if err != nil {
@@ -94,21 +87,12 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 		year:     year,
 	}
 
-	// パラメータでSQLクエリを受け取る
 	query := r.URL.Query().Get("query")
 	if query == "" {
-		http.Error(w, "missing query parameter", http.StatusBadRequest)
+		http.Error(w, "missing query parameter: query", http.StatusBadRequest)
 		return
 	}
 
-	// パラメータ（Options）で駅から駅までのルート探索なども指定できるようにする
-	routeSearch := r.URL.Query().Get("rs")
-	if routeSearch != "" {
-		// ルート探索のパラメータ処理（省略）
-		println("[ROUTE SEARCH] : ", routeSearch)
-	}
-
-	// ルーティングマップからハンドラを取得
 	ds, ok := datasets[key]
 	if !ok {
 		http.Error(w, "resource not found", http.StatusNotFound)
@@ -121,14 +105,10 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sqlreq.ParseSQLQuery(query)
+	// ここは本来 parsed を渡す（panicするなら要注意）
+	parsed := sqlreq.ParseSQLQuery(query)
 
-	// ハンドラを呼び出す（ここでは単純にレスポンスを書き込む例）
-	ds.Handler(w, year, resolved, nil, query)
-
-	w.Write([]byte(
-		"year=" + strconv.Itoa(year) + ", resource=" + key.Resource,
-	))
+	ds.Handler(w, year, resolved, parsed, query)
 }
 
 func resolveResources(r giocaltype.DatasetResourcePath) (giocaltype.DatasetResourcePath, error) {
