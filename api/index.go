@@ -4,6 +4,7 @@ import (
 	"CLI-Geographic-Calculation/internal/dataResolve"
 	"CLI-Geographic-Calculation/internal/giocal/giocaltype"
 	"CLI-Geographic-Calculation/internal/giocal/sqlreq"
+	"encoding/json"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -92,7 +93,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 	sqlreq.ParseSQLQuery(query)
 
 	// ハンドラを呼び出す（ここでは単純にレスポンスを書き込む例）
-	ds.Handler(resolved, year)
+	ds.Handler(w, year, resolved, nil, query)
 
 	w.Write([]byte(
 		"year=" + strconv.Itoa(year) + ", resource=" + key.Resource,
@@ -126,11 +127,23 @@ func resolveResources(r giocaltype.DatasetResourcePath) (giocaltype.DatasetResou
 	}, nil
 }
 
-type datasetHandler func(datasetResource giocaltype.DatasetResourcePath, year int)
+type datasetHandler func(w http.ResponseWriter, year int, res giocaltype.DatasetResourcePath, parsed any, rawSQL string)
 
-func handleRail(datasetResource giocaltype.DatasetResourcePath, year int) {
-	println("[HANDLE RAIL] Year:", year, "Rail Resource:", datasetResource.Rail)
+func handleRail(w http.ResponseWriter, year int, res giocaltype.DatasetResourcePath, parsed any, rawSQL string) {
+	println("[HANDLE RAIL] Year:", year, "Rail Resource:", res.Rail)
 
-	// ここで、datasetResourceを使ってデータを処理するロジックを実装
+	out := map[string]any{
+		"ok":       true,
+		"year":     year,
+		"resource": "rail",
+		"sql":      rawSQL,
+		"resolved_paths": map[string]string{
+			"rail":    res.Rail,
+			"station": res.Station,
+		},
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	_ = json.NewEncoder(w).Encode(out)
 
 }
