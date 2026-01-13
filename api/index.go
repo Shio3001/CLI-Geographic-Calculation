@@ -46,37 +46,27 @@ var datasets = map[routeKey]Dataset{
 func parseYearResource(path string) (int, string, error) {
 	p := strings.Trim(path, "/")
 	parts := strings.Split(p, "/")
-
-	// 許可パターン:
-	// - /api/{year}/{resource}
-	// - /{year}/{resource}
-	switch len(parts) {
-	case 2:
-		year, err := strconv.Atoi(parts[0])
-		if err != nil {
-			return 0, "", err
-		}
-		return year, parts[1], nil
-	case 3:
-		if parts[0] != "api" {
-			return 0, "", errBadPath
-		}
-		year, err := strconv.Atoi(parts[1])
-		if err != nil {
-			return 0, "", err
-		}
-		return year, parts[2], nil
-	default:
+	if len(parts) != 2 {
 		return 0, "", errBadPath
 	}
+	year, err := strconv.Atoi(parts[0])
+	if err != nil {
+		return 0, "", err
+	}
+	return year, parts[1], nil
 }
 
-var errBadPath = errors.New("path must be /api/{year}/{resource} or /{year}/{resource}")
+var errBadPath = errors.New("path must be {year}/{resource}")
 
 func Handler(w http.ResponseWriter, r *http.Request) {
-	println("[HANDLER] : ", r.URL.Path)
+	println("[HANDLER] urlPath:", r.URL.Path, "pathQuery:", r.URL.Query().Get("path"))
 
-	year, resource, err := parseYearResource(r.URL.Path)
+	p := r.URL.Query().Get("path")
+	if p == "" {
+		p = strings.TrimPrefix(r.URL.Path, "/api/")
+	}
+
+	year, resource, err := parseYearResource(p)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
