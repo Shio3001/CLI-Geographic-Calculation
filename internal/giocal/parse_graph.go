@@ -9,9 +9,11 @@ import (
 	"CLI-Geographic-Calculation/internal/giocal/graphstructure"
 )
 
-func ConvertGiotypeStationToGraph(
+func ConvertGiotypeStationToGraphByRequired(
 	stationFC *giocaltype.GiotypeStationFeatureCollection,
 	railroadSectionFC *giocaltype.GiotypeRailroadSectionFeatureCollection,
+	stationRequired []int,
+	railroadSectionRequired []int,
 ) *graphstructure.Graph {
 
 	g := &graphstructure.Graph{
@@ -25,7 +27,25 @@ func ConvertGiotypeStationToGraph(
 	// 路線(会社+路線名) -> その路線に属する座標ノード一覧
 	coordNodesByLineKey := map[string][]coordNodeRef{}
 
-	for i, sec := range railroadSectionFC.Features {
+	//rangeRailroadSectionRequired  railroadSectionRequiredの要素数が0の場合、すべての路線区間を対象とする
+	rangeRailroadSectionRequired := railroadSectionRequired
+	if len(railroadSectionRequired) == 0 {
+		rangeRailroadSectionRequired = make([]int, len(railroadSectionFC.Features))
+		for i := range railroadSectionFC.Features {
+			rangeRailroadSectionRequired[i] = i
+		}
+	}
+	// stationも同様
+	rangeStationRequired := stationRequired
+	if len(stationRequired) == 0 {
+		rangeStationRequired = make([]int, len(stationFC.Features))
+		for i := range stationFC.Features {
+			rangeStationRequired[i] = i
+		}
+	}
+
+	for i, index := range rangeRailroadSectionRequired {
+		sec := railroadSectionFC.Features[index]
 		lineKey := makeLineKey(sec.Properties.N02004, sec.Properties.N02003)
 
 		coords := sec.Geometry.Coordinates // [][]float64 期待: [][lon,lat]
@@ -92,7 +112,8 @@ func ConvertGiotypeStationToGraph(
 		coordNodesByLineKey[k] = uniqCoordRefs(refs)
 	}
 
-	for _, st := range stationFC.Features {
+	for _, index := range rangeStationRequired {
+		st := stationFC.Features[index]
 		stationID := makeStationID(st.Properties.N02005c, st.Properties.N02005g, st.Properties.N02004, st.Properties.N02003, st.Properties.N02005)
 
 		chosenLon, chosenLat, chosenOK := chooseStationRepresentativeLonLat(
