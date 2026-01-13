@@ -1,10 +1,10 @@
 // giodata内の geojson を読みこみ、変換し、型情報を付与して返すプログラム
-//型情報はinternal/giocal/giocaltype/.goパッケージに定義する
+//型情報はpkg/giocal/giocaltype/.goパッケージに定義する
 
 package giocal
 
 import (
-	"CLI-Geographic-Calculation/internal/giocal/giocaltype"
+	"CLI-Geographic-Calculation/pkg/giocal/giocaltype"
 	"encoding/json"
 	"os"
 )

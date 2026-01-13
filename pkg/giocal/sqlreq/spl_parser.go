@@ -2,10 +2,10 @@ package sqlreq
 
 //github.com/pganalyze/pg_query_go/v6を使う
 import (
-	"CLI-Geographic-Calculation/internal/giocal"
-	"CLI-Geographic-Calculation/internal/giocal/giocaltype"
-	"CLI-Geographic-Calculation/internal/giocal/graphstructure"
-	"CLI-Geographic-Calculation/internal/giocal/linefilter"
+	"CLI-Geographic-Calculation/pkg/giocal"
+	"CLI-Geographic-Calculation/pkg/giocal/giocaltype"
+	"CLI-Geographic-Calculation/pkg/giocal/graphstructure"
+	"CLI-Geographic-Calculation/pkg/giocal/linefilter"
 
 	pg_query "github.com/pganalyze/pg_query_go/v6"
 )

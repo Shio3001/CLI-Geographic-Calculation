@@ -5,8 +5,8 @@ import (
 	"math"
 	"sort"
 
-	"CLI-Geographic-Calculation/internal/giocal/giocaltype"
-	"CLI-Geographic-Calculation/internal/giocal/graphstructure"
+	"CLI-Geographic-Calculation/pkg/giocal/giocaltype"
+	"CLI-Geographic-Calculation/pkg/giocal/graphstructure"
 )
 
 func ConvertGiotypeRailwayToGraphByRequired(
