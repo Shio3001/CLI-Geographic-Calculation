@@ -1,4 +1,4 @@
-package api
+package main
 
 import (
 	"CLI-Geographic-Calculation/pkg/dataResolve"
