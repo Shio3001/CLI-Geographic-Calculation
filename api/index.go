@@ -37,8 +37,8 @@ var datasets = map[routeKey]Dataset{
 		// },
 
 		Resources: giocaltype.DatasetResourcePath{
-			Rail:    "N02-23_RailroadSection.json",
-			Station: "N02-23_Station.json",
+			Rail:    "https://t4rttlmu64pagxmi.public.blob.vercel-storage.com/N02-23_RailroadSection.json",
+			Station: "https://t4rttlmu64pagxmi.public.blob.vercel-storage.com/N02-23_Station.json",
 		},
 	},
 }
