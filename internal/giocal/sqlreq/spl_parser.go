@@ -83,7 +83,8 @@ func GetGroupByClauses(stmt *pg_query.Node) []*pg_query.Node {
 func SQLToGraph(filterFunc linefilter.FilterByProperties[giocaltype.GiotypeRailroadSection], parsed *pg_query.ParseResult, drs *giocaltype.DatasetResource) *graphstructure.Graph {
 	firstStmt := GetFirstStmt(parsed)
 	whereClause := GetWhereClause(firstStmt)
-	// required := ParseWhereClause(filterFunc, &drs.Rail.Features, whereClause, []int{})
-	graph := giocal.ConvertGiotypeStationToGraph(drs.Station, drs.Rail)
+	railroadSectionRequired := ParseWhereClause(filterFunc, &drs.Rail.Features, whereClause, []int{})
+	stationRequired := ParseWhereClause(linefilter.FilterStationByProperties, &drs.Station.Features, whereClause, []int{})
+	graph := giocal.ConvertGiotypeStationToGraphByRequired(drs.Station, drs.Rail, stationRequired, railroadSectionRequired)
 	return graph
 }
