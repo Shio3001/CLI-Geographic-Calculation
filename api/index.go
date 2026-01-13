@@ -1,27 +1,18 @@
-//get requestを受信SQL文を受け取る
-//SQL Likeな文でgeojsonのデータを整理できるようにする
-//url routing は
-
-package main
+package api
 
 import (
+	"CLI-Geographic-Calculation/internal/dataResolve"
 	"CLI-Geographic-Calculation/internal/giocal/giocaltype"
 	"CLI-Geographic-Calculation/internal/giocal/sqlreq"
+	"encoding/json"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 )
 
-// 連想配列でルーティングを定義するが、下記のようなパスを想定
-// 2023/rail/クエリパラメータ
-// 2024/station/クエリパラメータ
-// クエリパラメータはSQ文でgeojsonのデータを整理できるようにする
-// 例: /2023/rail?query=SELECT * FROM rails WHERE length > 1000
-// 例: /2024/station?query=SELECT * FROM stations WHERE city = 'Tokyo'
-// 解析するSQL Likeな文は通常のSQL文に近い形で実装する
-
-// ルーティング用のキー
-// routeKeyの年は、データセット内における年次データを用いるとき、どの年度を使うかを指定するためのもの
 type routeKey struct {
 	year     int
 	Resource string
@@ -51,13 +42,7 @@ var datasets = map[routeKey]Dataset{
 	},
 }
 
-func main() {
-	println("[HTTP] GIOCAL")
-	http.HandleFunc("/", handler)
-	http.ListenAndServe(":8080", nil)
-}
-
-func handler(w http.ResponseWriter, r *http.Request) {
+func Handler(w http.ResponseWriter, r *http.Request) {
 	println("[HANDLER] : ", r.URL.Path)
 	// "/rail/2023/" → ["rail", "2023"]
 	path := strings.Trim(r.URL.Path, "/")
@@ -93,27 +78,72 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// ルーティングマップからハンドラを取得
-	handler, ok := datasets[key]
+	ds, ok := datasets[key]
 	if !ok {
 		http.Error(w, "resource not found", http.StatusNotFound)
+		return
+	}
+
+	resolved, err := resolveResources(ds.Resources)
+	if err != nil {
+		http.Error(w, "failed to resolve dataset resources: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	sqlreq.ParseSQLQuery(query)
 
 	// ハンドラを呼び出す（ここでは単純にレスポンスを書き込む例）
-	handler.Handler(handler.Resources, year)
+	ds.Handler(w, year, resolved, nil, query)
 
 	w.Write([]byte(
 		"year=" + strconv.Itoa(year) + ", resource=" + key.Resource,
 	))
 }
 
-type datasetHandler func(datasetResource giocaltype.DatasetResourcePath, year int)
+func resolveResources(r giocaltype.DatasetResourcePath) (giocaltype.DatasetResourcePath, error) {
+	env := strings.ToLower(os.Getenv("APP_ENV"))
+	if env == "" {
+		env = "dev"
+	}
 
-func handleRail(datasetResource giocaltype.DatasetResourcePath, year int) {
-	println("[HANDLE RAIL] Year:", year, "Rail Resource:", datasetResource.Rail)
+	if env == "prod" {
+		cacheDir := filepath.Join(os.TempDir(), "gio-cache")
 
-	// ここで、datasetResourceを使ってデータを処理するロジックを実装
+		p := dataResolve.BlobURLProvider{
+			CacheDir: cacheDir,
+			Client:   &http.Client{Timeout: 20 * time.Second},
+		}
+		return p.Resolve(r)
+	}
+
+	// dev: ローカル baseDir を付けるだけ
+	base := os.Getenv("GIO_LOCAL_BASE")
+	if base == "" {
+		base = "internal/giodata_public"
+	}
+	return giocaltype.DatasetResourcePath{
+		Rail:    filepath.Join(base, r.Rail),
+		Station: filepath.Join(base, r.Station),
+	}, nil
+}
+
+type datasetHandler func(w http.ResponseWriter, year int, res giocaltype.DatasetResourcePath, parsed any, rawSQL string)
+
+func handleRail(w http.ResponseWriter, year int, res giocaltype.DatasetResourcePath, parsed any, rawSQL string) {
+	println("[HANDLE RAIL] Year:", year, "Rail Resource:", res.Rail)
+
+	out := map[string]any{
+		"ok":       true,
+		"year":     year,
+		"resource": "rail",
+		"sql":      rawSQL,
+		"resolved_paths": map[string]string{
+			"rail":    res.Rail,
+			"station": res.Station,
+		},
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	_ = json.NewEncoder(w).Encode(out)
 
 }

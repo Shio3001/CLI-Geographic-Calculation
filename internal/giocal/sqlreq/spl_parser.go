@@ -85,6 +85,6 @@ func SQLToGraph(filterFunc linefilter.FilterByProperties[giocaltype.GiotypeRailr
 	whereClause := GetWhereClause(firstStmt)
 	railroadSectionRequired := ParseWhereClause(filterFunc, &drs.Rail.Features, whereClause, []int{})
 	stationRequired := ParseWhereClause(linefilter.FilterStationByProperties, &drs.Station.Features, whereClause, []int{})
-	graph := giocal.ConvertGiotypeStationToGraphByRequired(drs.Station, drs.Rail, stationRequired, railroadSectionRequired)
+	graph := giocal.ConvertGiotypeRailwayToGraphByRequired(drs.Station, drs.Rail, stationRequired, railroadSectionRequired)
 	return graph
 }
