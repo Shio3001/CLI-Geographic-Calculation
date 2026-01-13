@@ -5,6 +5,7 @@ import (
 	"CLI-Geographic-Calculation/pkg/giocal/giocaltype"
 	"CLI-Geographic-Calculation/pkg/giocal/sqlreq"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -42,6 +43,36 @@ var datasets = map[routeKey]Dataset{
 	},
 }
 
+func parseYearResource(path string) (int, string, error) {
+	p := strings.Trim(path, "/")
+	parts := strings.Split(p, "/")
+
+	// 許可パターン:
+	// - /api/{year}/{resource}
+	// - /{year}/{resource}
+	switch len(parts) {
+	case 2:
+		year, err := strconv.Atoi(parts[0])
+		if err != nil {
+			return 0, "", err
+		}
+		return year, parts[1], nil
+	case 3:
+		if parts[0] != "api" {
+			return 0, "", errBadPath
+		}
+		year, err := strconv.Atoi(parts[1])
+		if err != nil {
+			return 0, "", err
+		}
+		return year, parts[2], nil
+	default:
+		return 0, "", errBadPath
+	}
+}
+
+var errBadPath = errors.New("path must be /api/{year}/{resource} or /{year}/{resource}")
+
 func Handler(w http.ResponseWriter, r *http.Request) {
 	println("[HANDLER] : ", r.URL.Path)
 	// "/rail/2023/" → ["rail", "2023"]
@@ -52,14 +83,14 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	year, err := strconv.Atoi(parts[1])
+	year, resource, err := parseYearResource(r.URL.Path)
 	if err != nil {
-		http.Error(w, "invalid year", http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	key := routeKey{
-		Resource: parts[0],
+		Resource: resource,
 		year:     year,
 	}
 
