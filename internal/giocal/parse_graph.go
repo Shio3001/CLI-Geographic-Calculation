@@ -9,7 +9,7 @@ import (
 	"CLI-Geographic-Calculation/internal/giocal/graphstructure"
 )
 
-func ConvertGiotypeStationToGraphByRequired(
+func ConvertGiotypeRailwayToGraphByRequired(
 	stationFC *giocaltype.GiotypeStationFeatureCollection,
 	railroadSectionFC *giocaltype.GiotypeRailroadSectionFeatureCollection,
 	stationRequired []int,
