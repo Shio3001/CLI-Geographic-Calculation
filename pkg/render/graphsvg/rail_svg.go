@@ -105,7 +105,6 @@ func RenderRailGraphSVG(graph any, opt Options) (string, error) {
 	buf.WriteString(`<rect x="0" y="0" width="100%" height="100%" fill="white"/>` + "\n")
 
 	// 線（rail）
-	// 見やすさのために薄めのストローク（色指定は適宜変更）
 	buf.WriteString(`<g fill="none" stroke="#111" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" opacity="0.9">` + "\n")
 	for _, e := range railEdges {
 		a, okA := g.Nodes[e.From]
@@ -142,10 +141,6 @@ func RenderRailGraphSVG(graph any, opt Options) (string, error) {
 		}
 		buf.WriteString(`</g>` + "\n")
 	}
-
-	// デバッグ用 bbox 情報（不要なら削除）
-	// buf.WriteString(fmt.Sprintf(`<text x="10" y="%d" font-size="12" fill="#666">bbox lon[%.6f..%.6f] lat[%.6f..%.6f]</text>`+"\n",
-	// 	opt.Height-10, minLon, maxLon, minLat, maxLat))
 
 	buf.WriteString(`</svg>` + "\n")
 	return buf.String(), nil
@@ -190,7 +185,6 @@ func collectStations(g *graphstructure.Graph) []stationInfo {
 			Lat:  n.Lat,
 		})
 	}
-	// 名前順（任意）
 	sort.Slice(out, func(i, j int) bool { return out[i].Name < out[j].Name })
 	return out
 }

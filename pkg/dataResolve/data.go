@@ -40,7 +40,6 @@ func (p CachedRemoteProvider) fetchToCache(key, url string) (string, error) {
 	}
 	dst := filepath.Join(p.CacheDir, key+".json")
 
-	// 既にあるなら使う（必要ならETag対応などに拡張）
 	if _, err := os.Stat(dst); err == nil {
 		return dst, nil
 	}
