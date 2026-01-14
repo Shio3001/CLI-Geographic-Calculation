@@ -27,6 +27,9 @@ curl -sS \
 curl -sS   --get   --data-urlencode "query=SELECT * FROM rail WHERE company IN ('東日本旅客鉄道' , '東海旅客鉄道' ) AND line = '中央線'"   https://cli-geographic-calculation.vercel.app/api/2023/rail/svg -o chuo.svg
 ```
 
+![sample image](./doc/sample-chuo.png.png)
+出力 svg の例（テスト版）
+
 ## 権利情報
 
 ### 出典
