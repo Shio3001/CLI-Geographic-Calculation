@@ -37,3 +37,6 @@ curl -sS   --get   --data-urlencode "query=SELECT * FROM rail WHERE company IN (
 「国土数値情報（鉄道 データ）」（国土交通省）[国土数値情報（鉄道 データ）](https://nlftp.mlit.go.jp/ksj/gml/datalist/KsjTmplt-N02-2022.html)を加工して作成
 
 ## 備考
+
+（任意）
+本ソフトウェアを用いて公開した動画の概要欄に「しおまち （https://twitter.com/ShioPy0101）のソフトウェアを用いて地理情報を用いたアニメーションを作成しました」的なことを書いてくれると、うれしいです。
